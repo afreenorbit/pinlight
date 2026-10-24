@@ -1,0 +1,13 @@
+{
+  "duration": 79.26666666666667,
+  "frames": 1189,
+  "audioRms": 0.09415150433778763,
+  "reason": "completed",
+  "region": {
+    "left": 6,
+    "top": 192,
+    "width": 1908,
+    "height": 810
+  },
+  "audio": "system playback only; browser narration, not Bolna"
+}
