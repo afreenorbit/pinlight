@@ -8,6 +8,7 @@ import Settings from './pages/Settings.jsx';
 import Account from './pages/Account.jsx';
 import Desk from './pages/Desk.jsx';
 import { AuthProvider } from './lib/auth.jsx';
+import { accountsEnabled } from './lib/supabase.js';
 
 const readRoute = () => location.pathname.replace(/\/$/, '') || '/';
 export default function App() {
@@ -48,8 +49,8 @@ export default function App() {
   else if (route === '/source') page = <Workspace />;
   else if (['/documents', '/inspections', '/reports'].includes(route)) page = <Collection key={route} route={route} />;
   else if (route === '/settings') page = <Settings />;
-  else if (route === '/signin') page = <Account />;
-  else if (route === '/desk') page = <Desk />;
+  else if (accountsEnabled && route === '/signin') page = <Account />;
+  else if (accountsEnabled && route === '/desk') page = <Desk />;
   else if (route !== '/') page = <section className="section-wrap app-page"><h1>That page isn’t here.</h1><a className="text-link" href="/">Return to overview →</a></section>;
   return <AuthProvider><a className="skip-link" href="#main-content">Skip to content</a><Layout route={route}><Suspense fallback={<section className="section-wrap app-page"><p role="status">Opening your learning desk…</p></section>}>{page}</Suspense></Layout></AuthProvider>;
 }

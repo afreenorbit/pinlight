@@ -133,7 +133,7 @@ export default function Learn(){
   </header>
   <div className="studio-grid">
    <aside className="studio-chat" aria-label="Tutor chat">
-    <div className="chat-head"><div><strong>Ask the tutor</strong><small>It points to what it’s talking about.</small></div>{user?<div className="chat-switcher"><select aria-label="Chats for this board" value={chatId||''} onChange={e=>e.target.value?openChat(e.target.value):newChat()}><option value="">New chat</option>{chats.map(c=><option key={c.id} value={c.id}>{c.title}</option>)}</select></div>:<a className="text-link" href="/signin">Sign in to save</a>}</div>
+    <div className="chat-head"><div><strong>Ask the tutor</strong><small>It points to what it’s talking about.</small></div>{user?<div className="chat-switcher"><select aria-label="Chats for this board" value={chatId||''} onChange={e=>e.target.value?openChat(e.target.value):newChat()}><option value="">New chat</option>{chats.map(c=><option key={c.id} value={c.id}>{c.title}</option>)}</select></div>:null}</div>
     <div className="chat-thread" ref={threadRef} aria-live="polite">
      {!thread.length&&<div className="chat-empty"><p>Ask anything about what you see, or tell the desk what to do.</p>{suggestions.map(s=><button key={s} onClick={()=>!asking&&converse(s)}>{s}</button>)}</div>}
      {thread.map((m,i)=><div key={i} className={`chat-msg ${m.role}`}><small>{m.role==='user'?'You':m.engine==='ai'?'AI tutor · source-linked':m.engine==='command'?'Desk':m.notice||'Lesson guide'}</small><p>{m.text}</p>{m.sources?.filter(id=>sources[id]).map(id=><a key={id} href={sources[id].url} target="_blank" rel="noreferrer">{sources[id].title} ↗</a>)}</div>)}
