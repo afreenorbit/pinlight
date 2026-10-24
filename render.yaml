@@ -1,0 +1,41 @@
+# Pinlight API on Render. Secrets marked sync: false are entered in the Render dashboard, never committed.
+services:
+  - type: web
+    name: pinlight-api
+    runtime: node
+    plan: starter            # a persistent disk needs a paid plan; on free, uploads vanish on restart
+    region: singapore
+    buildCommand: npm ci
+    startCommand: node server/index.js
+    healthCheckPath: /api/health
+    disk:
+      name: pinlight-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: HOST
+        value: 0.0.0.0
+      - key: RATE_LIMIT
+        value: "on"
+      - key: DATABASE_PATH
+        value: /var/data/tracepoint.sqlite
+      - key: DOCUMENTS_DIR
+        value: /var/data/documents
+      - key: REPORTS_DIR
+        value: /var/data/reports
+      - key: PUBLIC_HOSTS
+        value: api.afreenorbit.tech,pinlight-api.onrender.com
+      - key: ALLOWED_ORIGINS
+        value: https://pinlight.afreenorbit.tech
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      - key: GROQ_API_KEY
+        sync: false
+      - key: BOLNA_API_KEY
+        sync: false
+      - key: BOLNA_AGENT_ID
+        sync: false
+      - key: BOLNA_LEARNING_AGENT_ID
+        sync: false

@@ -15,6 +15,19 @@ import { bolnaService } from './bolna/service.js';
 import { board,experiments,sources } from '../shared/learning/raspberry-pi-5.js';
 
 const fail = (message, status) => Object.assign(new Error(message), { status });
+// Public deployment: extra hosts and browser origins come from the environment; local defaults are unchanged.
+const listEnv = name => (process.env[name] || '').split(',').map(s => s.trim()).filter(Boolean);
+// Requests that spend provider credits or disk are capped per client IP (and overall) when RATE_LIMIT=on.
+const limits = { ask: [20, 600e3, 400], voice: [4, 3600e3, 40], upload: [10, 3600e3, 100], command: [30, 600e3, 600] };
+function createLimiter() {
+  const hits = new Map(), count = (key, windowMs) => { const now = Date.now(), list = (hits.get(key) || []).filter(t => now - t < windowMs); hits.set(key, list); return list; };
+  return (request, bucket) => {
+    const [perClient, windowMs, overall] = limits[bucket], ip = (request.headers['x-forwarded-for'] || '').split(',')[0].trim() || request.socket.remoteAddress;
+    const mine = count(`${bucket}:${ip}`, windowMs), all = count(bucket, windowMs);
+    if (mine.length >= perClient || all.length >= overall) return true;
+    mine.push(Date.now()); all.push(Date.now()); return false;
+  };
+}
 const idSchema = z.string().uuid();
 const boundsSchema = z.object({ x: z.number().min(0).max(1), y: z.number().min(0).max(1), width: z.number().positive().max(1), height: z.number().positive().max(1) }).refine(b => b.x + b.width <= 1.001 && b.y + b.height <= 1.001);
 const manualSchema = z.object({ page: z.number().int().positive(), label: z.string().trim().min(1).max(60), bounds: boundsSchema, pdfBounds: z.object({ x: z.number(), y: z.number(), width: z.number().positive(), height: z.number().positive() }) }).strict();
@@ -25,22 +38,34 @@ async function body(request, binary = false) {
   if (binary) return bytes;
   try { return JSON.parse(bytes.toString('utf8')); } catch { throw fail('Invalid JSON body.', 400); }
 }
-export function createApplication({ projectRoot = process.cwd(), databasePath = process.env.DATABASE_PATH || './data/tracepoint.sqlite', documentsDir = process.env.DOCUMENTS_DIR || './data/documents', reportsDir = './data/reports', engine = mastra, bolnaOptions, learningOptions, learningVoiceOptions } = {}) {
+export function createApplication({ projectRoot = process.cwd(), databasePath = process.env.DATABASE_PATH || './data/tracepoint.sqlite', documentsDir = process.env.DOCUMENTS_DIR || './data/documents', reportsDir = process.env.REPORTS_DIR || './data/reports', engine = mastra, bolnaOptions, learningOptions, learningVoiceOptions } = {}) {
   const store = createStore(databasePath), documents = documentService(store, documentsDir);
   const inspections = inspectionService(store, engine), commands = commandService(store, engine, inspections);
   const reports = reportService(store, documents, resolve(reportsDir));
   const bolna = bolnaService(store, bolnaOptions); const tutor=createTutorService({store,...learningOptions}), learningVoice=createLearningVoiceService({store,...learningVoiceOptions});
+  const allowedHosts = new Set(['localhost', '127.0.0.1', '[::1]', ...listEnv('PUBLIC_HOSTS')]);
+  const allowedOrigins = new Set(['http://localhost:5173', 'http://127.0.0.1:5173', ...listEnv('ALLOWED_ORIGINS')]);
+  const limited = process.env.RATE_LIMIT === 'on' ? createLimiter() : () => false;
   const server = createServer(async (request, response) => {
     response.setHeader('Cache-Control', 'no-store'); response.setHeader('X-Content-Type-Options', 'nosniff');
     try {
+      const origin = request.headers.origin, trusted = origin && allowedOrigins.has(origin);
+      if (trusted) { response.setHeader('Access-Control-Allow-Origin', origin); response.setHeader('Vary', 'Origin'); }
+      if (request.method === 'OPTIONS') {
+        if (!trusted) throw fail('Origin not allowed.', 403);
+        response.writeHead(204, { 'Access-Control-Allow-Methods': 'GET, POST, PATCH, PUT, DELETE', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '600' });
+        return response.end();
+      }
       const host = new URL(`http://${request.headers.host}`).hostname;
-      if (!['localhost', '127.0.0.1', '[::1]'].includes(host)) throw fail('Unsupported host.', 403);
+      // The hosting platform's health check may use an internal host name.
+      if (!allowedHosts.has(host) && request.url !== '/api/health') throw fail('Unsupported host.', 403);
       if (request.method !== 'GET') {
-        const origin = request.headers.origin;
-        if ((origin && !['http://localhost:5173', 'http://127.0.0.1:5173', `http://${request.headers.host}`].includes(origin)) || request.headers['sec-fetch-site'] === 'cross-site') throw fail('Cross-site writes are not allowed.', 403);
+        if ((origin && !trusted && origin !== `http://${request.headers.host}`) || (request.headers['sec-fetch-site'] === 'cross-site' && !trusted)) throw fail('Cross-site writes are not allowed.', 403);
       }
       const url = new URL(request.url, 'http://localhost');
       const parts = url.pathname.split('/').filter(Boolean), [, kind, id, action] = parts, method = request.method;
+      const bucket = method !== 'POST' ? null : kind === 'learning' && id === 'ask' ? 'ask' : (kind === 'learning' && id === 'voice-session') || (kind === 'bolna' && id === 'session') ? 'voice' : kind === 'documents' && (!id || id === 'import-local') ? 'upload' : kind === 'commands' ? 'command' : null;
+      if (bucket && limited(request, bucket)) throw fail('Too many requests right now. Try again in a few minutes.', 429);
       const send = (value, status = 200) => { response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' }); response.end(JSON.stringify(value)); };
       if (url.pathname === '/api/health' && method === 'GET') return send({ name: 'tracepoint', stage: 'local-mvp', documents: store.list('document').length });
       if (url.pathname === '/api/engine' && method === 'GET') return send({ framework: 'Mastra', workflows: Object.keys(engine.listWorkflows()), agents: Object.keys(engine.listAgents()), providerCallsEnabled: Boolean(engine.listAgents().inspectionAgent), model: process.env.GROQ_MODEL || null, documentRetrievalConnected: true, persistenceConnected: true, voice: { wispr: 'external-dictation', bolna: bolna.status() } });

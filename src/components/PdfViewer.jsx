@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import { apiBase } from '../lib/api.js';
 
 GlobalWorkerOptions.workerSrc = workerUrl;
 
@@ -11,7 +12,7 @@ export default function PdfViewer({ document, pageNumber, onPage, selected, onSe
   const [zoom, setZoom] = useState(100), [pinning, setPinning] = useState(false);
   useEffect(() => {
     setError(''); setRendering(true); setLoaded(0);
-    const task = getDocument({ url: `/api/documents/${document.id}/file`, isEvalSupported: false });
+    const task = getDocument({ url: `${apiBase}/documents/${document.id}/file`, isEvalSupported: false });
     let active = true;
     task.promise.then(pdf => { if (active) { pdfRef.current = pdf; setLoaded(n => n + 1); } }).catch(() => { if (active) setError('The PDF could not be displayed. Check the API connection.'); });
     return () => { active = false; pdfRef.current = null; task.destroy(); };
