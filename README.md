@@ -32,6 +32,12 @@ Open weights leave room to change inference providers, while the open agent fram
 
 **Current limits:** the 3D models are learning illustrations, not official CAD. Circuit activities preview fixed behaviours rather than solve electrical circuits or execute code on physical hardware. Arbitrary PDFs do not generate 3D models or lessons. Source links help learners check answers; validating a source ID does not guarantee every sentence is correct.
 
+## Where Pinlight goes next
+
+The next step is a database-backed personal learning library: upload an electronics-related PDF, have it organised by board, chip, module or topic, and turn its source material into a guided learning journey. The planned journey would break concepts into small lessons, link explanations back to the PDF, and save the document, questions and progress so you can return where you left off.
+
+The aim is to support a broad range of electronics PDFs, beyond the two prepared board packages. Document organisation and optional database integration have a starting foundation; reliable PDF-to-journey generation and saved end-to-end learning journeys are future work.
+
 ## Run locally
 
 Requires **Node.js 24+**. On a fresh checkout, copy `.env.example` to `.env` and configure the integrations you need. Preserve an existing `.env`. Set `GROQ_API_KEY` for live AI answers; without it, the learning desk can use its curated guide. Wispr Flow is a separate desktop application.
