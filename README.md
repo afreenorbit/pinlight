@@ -20,7 +20,7 @@ Today, the catalogue includes **2 boards, 5 experiment types per board and 20 gu
 - Try **Blink an LED**, **Read a button press**, **Set the RGB balance**, **Tune a piezo tone** and **Position a servo**. Change controls and inspect the matching Python or Arduino reference code.
 - Ask the tutor about the current lesson. Mastra orchestrates `gpt-oss-120b` through Groq; the server validates returned source IDs and component targets. A labelled curated guide is available when live AI is unavailable.
 - Type or dictate questions with Wispr Flow. Optional Bolna tutor controls support English and Hindi; real two-way microphone testing remains pending.
-- Upload a datasheet for text-based identification of supported boards. The retained source workspace at `/source` offers PDF search, local OCR, reviewed annotations and report exports.
+- Upload a datasheet for text-based identification of supported boards.
 
 ![LED behaviour preview with reference code](docs/blog/s5-led-running-code.png)
 

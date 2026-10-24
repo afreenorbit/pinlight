@@ -14,6 +14,6 @@ export function simulationCode(boardId,lesson,{period=1000,rgb=[.7,.2,1],angle=9
  return code;
 }
 export function describeSimulation(kind,{running,lit,pressed,angle,pitch,rgb}){
- if(!running)return 'Simulation paused. The code is a hardware reference; it is not executed by this browser.';
+ if(!running)return 'Preview paused.';
  return kind==='button'?(pressed?'Switch closed → input LOW → pressed event.':'Switch open → pull-up holds input HIGH.'):kind==='rgb'?`Red ${Math.round(rgb[0]*100)}%, green ${Math.round(rgb[1]*100)}%, blue ${Math.round(rgb[2]*100)}% combine in the LED lens.`:kind==='servo'?`Control pulses request ${angle}°. The horn moves to the target; the external supply powers the motor.`:kind==='buzzer'?(lit?`Alternating signal → piezo vibrates at ${pitch} Hz. The rings show the sound pulse.`:'Signal paused → piezo is silent.'):(lit?'GPIO HIGH → current through resistor → LED emits light.':'GPIO LOW → no forward current → LED is off.');
 }

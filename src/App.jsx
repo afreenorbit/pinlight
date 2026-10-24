@@ -2,15 +2,13 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import Layout from './components/Layout.jsx';
 import Home from './pages/Home.jsx';
 const Learn = lazy(() => import('./pages/Learn.jsx'));
-const Workspace = lazy(() => import('./pages/Workspace.jsx'));
-import Collection from './pages/Collection.jsx';
 import Settings from './pages/Settings.jsx';
 import Account from './pages/Account.jsx';
 import Desk from './pages/Desk.jsx';
 import { AuthProvider } from './lib/auth.jsx';
 import { accountsEnabled } from './lib/supabase.js';
 
-const readRoute = () => location.pathname.replace(/\/$/, '') || '/';
+const readRoute = () => { const path = location.pathname.replace(/\/$/, '') || '/'; return ['/source', '/documents', '/inspections', '/reports'].includes(path) ? '/learn' : path; };
 export default function App() {
   const [route, setRoute] = useState(readRoute);
   useEffect(() => {
@@ -46,8 +44,6 @@ export default function App() {
   useEffect(() => { document.title = `Pinlight · ${titles[route] || 'Page not found'}`; }, [route]);
   let page = <Home />;
   if (['/learn','/workspace'].includes(route)) page = <Learn />;
-  else if (route === '/source') page = <Workspace />;
-  else if (['/documents', '/inspections', '/reports'].includes(route)) page = <Collection key={route} route={route} />;
   else if (route === '/settings') page = <Settings />;
   else if (accountsEnabled && route === '/signin') page = <Account />;
   else if (accountsEnabled && route === '/desk') page = <Desk />;

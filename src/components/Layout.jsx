@@ -12,7 +12,7 @@ export default function Layout({ route, children }) {
     <header className="site-header">
       <Brand />
       <nav aria-label="Main navigation">
-        {[['/', 'Overview'], ['/learn', 'Learning desk'], ...(accountsEnabled ? [['/desk', 'My desk']] : []), ['/documents', 'Sources']].map(([path, title]) => <a key={path} href={path} aria-current={route === path ? 'page' : undefined}>{title}</a>)}
+        {[['/', 'Overview'], ['/learn', 'Learning desk'], ...(accountsEnabled ? [['/desk', 'My desk']] : [])].map(([path, title]) => <a key={path} href={path} aria-current={route === path ? 'page' : undefined}>{title}</a>)}
       </nav>
       {!accountsEnabled ? <a className="header-action" href="/learn">Start learning <Icon name="diagonal" size={16} /></a> : user ? <a className="header-action" href="/signin" title={user.email}><span className="avatar-dot">{user.email[0].toUpperCase()}</span> Account</a> : <a className="header-action" href="/signin">Sign in <Icon name="diagonal" size={16} /></a>}
     </header>

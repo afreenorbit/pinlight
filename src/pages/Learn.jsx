@@ -141,7 +141,7 @@ export default function Learn(){
     </div>
     <WisprInput id="lesson-command" value={command} onChange={setCommand} onSend={text=>{setCommand('');converse(text);}} busy={asking} disabled={voiceActive} placeholder={experiment?'Why the resistor? · Run it · Slower':'What does RP1 do? · Show GPIO · Next'}/>
     {cloudNote&&<p className="command-help" role="alert">{cloudNote}</p>}
-    <details className="studio-voice"><summary>Talk it through out loud <small>Bolna · English / हिंदी</small></summary><LearningVoice context={context} blocked={false} configured={!!connection?.voice?.configured} onActiveChange={active=>{setVoiceActive(active);if(active){setRead(false);setSound(false);setRunning(false);questionRequest.current?.abort();}}}/></details>
+    <details className="studio-voice"><summary>Talk it through out loud <small>English / हिंदी</small></summary><LearningVoice context={context} blocked={false} configured={!!connection?.voice?.configured} onActiveChange={active=>{setVoiceActive(active);if(active){setRead(false);setSound(false);setRunning(false);questionRequest.current?.abort();}}}/></details>
    </aside>
    <div className="studio-stage">
     <div className="scene-topline"><span>{experiment?lesson.title.toUpperCase():`${board.name.toUpperCase()} / EXPLORE`}</span>{experiment&&<button className="code-toggle" aria-pressed={showCode} onClick={()=>setShowCode(v=>!v)}>{showCode?'Hide code':'</> Code'}</button>}</div>
@@ -169,7 +169,7 @@ export default function Learn(){
       <div className="trail-circuits">{experiments.map(e=><button key={e.id} onClick={()=>selectLesson(e.id)}><span className={`kit-icon kit-${e.kind}`}>{e.icon}</span><span><strong>{e.title}</strong><small>{e.subtitle}</small></span>{done.includes(`${boardId}/${e.id}/run`)?<b>✓</b>:<b>→</b>}</button>)}</div>
      </>}
     </div>}
-    <label className="read-aloud-setting"><input type="checkbox" checked={read} disabled={voiceActive} onChange={e=>setRead(e.target.checked)}/> Read steps aloud <small>browser voice</small></label>{read&&<SpokenResponse text={partInfo?.detail||feedback?.text||narration} autoRead={read} blocked={voiceActive}/>}
+    <label className="read-aloud-setting"><input type="checkbox" checked={read} disabled={voiceActive} onChange={e=>setRead(e.target.checked)}/> Read steps aloud</label>{read&&<SpokenResponse text={partInfo?.detail||feedback?.text||narration} autoRead={read} blocked={voiceActive}/>}
    </aside>
   </div>
  </section>;
