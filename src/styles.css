@@ -128,7 +128,7 @@ html{scroll-padding-top:116px}.composer{top:110px}
 @media (max-width:900px){.project-picker{grid-template-columns:repeat(2,minmax(0,1fr))}.journey-rail{grid-template-columns:1fr}.step-rail{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:560px){.project-picker{grid-template-columns:1fr}.chat-msg{max-width:94%}.auth-card{padding:24px}.desk-page-heading h1{font-size:32px}}
 
-/* Studio: the learning desk fills the screen — chat on the left, 3D in the middle, the trail on the right. */
+/* Studio: the learning desk fills the screen · chat on the left, 3D in the middle, the trail on the right. */
 .studio{height:calc(100dvh - 94px);min-height:620px;display:flex;flex-direction:column;gap:10px;padding:10px 16px 16px;scroll-margin-top:94px}
 .studio-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .studio-boards,.studio-modes{display:flex;gap:4px;padding:4px;background:#eef1e5;border:1px solid #d7dfcb;border-radius:9px}

@@ -43,7 +43,7 @@ export default function App() {
     };
   }, []);
   const titles = { '/': 'Let a little light come on', '/workspace': 'Learning desk', '/learn': 'Learning desk', '/source': 'Source workspace', '/documents': 'Documents', '/inspections': 'Inspections', '/reports': 'Reports', '/settings': 'Settings', '/signin': 'Sign in', '/desk': 'My desk' };
-  useEffect(() => { document.title = `Pinlight — ${titles[route] || 'Page not found'}`; }, [route]);
+  useEffect(() => { document.title = `Pinlight · ${titles[route] || 'Page not found'}`; }, [route]);
   let page = <Home />;
   if (['/learn','/workspace'].includes(route)) page = <Learn />;
   else if (route === '/source') page = <Workspace />;
