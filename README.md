@@ -1,6 +1,5 @@
 # Pinlight
 
-Voice verification (25 October 2026): the deployed API reports Bolna configured, and the dedicated Pinlight agent is configured for ElevenLabs English and Sarvam Hindi. The inspected execution history contains one failed browser call (0 seconds, $0, “Call could not be connected”). Successful provider audio is not yet verified. Previously, “Read steps aloud” used browser speech synthesis. The updated source routes step narration to the same consented Bolna call; it still needs deployment and a successful microphone test.
 
 **Understand the board. Follow the connection. See what changes.**
 
@@ -23,7 +22,7 @@ Today, the catalogue includes **2 boards, 5 experiment types per board and 20 gu
 - Explore the board in 3D, select parts and follow explanations linked to reference sources.
 - Try **Blink an LED**, **Read a button press**, **Set the RGB balance**, **Tune a piezo tone** and **Position a servo**. Change controls and inspect the matching Python or Arduino reference code.
 - Ask the tutor about the current lesson. Mastra orchestrates `gpt-oss-120b` through Groq; the server validates returned source IDs and component targets. A labelled curated guide is available when live AI is unavailable.
-- Talk it through out loud in English or Hindi. The voice tutor is consent-gated, capped at three minutes, and read-only: it can discuss the current lesson but cannot move the 3D scene or run a circuit.
+- Talk it through out loud in English or Hindi. The voice tutor is consent-gated, capped at three minutes, and shares the chat command handler: it can move the scene, navigate lessons and run the teaching previews.
 - Upload an electronics PDF to create a persistent processing job, extract device specifications with source citations, explore approximate 3D components, review pins and dimensions, try ideal voltage-divider or capacitor-charge experiments, and search for related manufacturer references through SerpApi.
 - Sign in with Auth0 to save documents, chats, journeys and progress in My desk. Owner-scoped row-level security and private storage keep each account's files separate. Guests can explore; cloud saving needs an account.
 
@@ -36,7 +35,7 @@ Pinlight is split into a browser desk, a Node API and a small set of provider in
 - **Browser desk:** React 19 and Vite, with Three.js for the original board illustrations. The desk owns the 3D scene, guided steps, code preview and chat.
 - **API:** Node 24 on Render. It verifies Auth0 tokens, assembles server-owned lesson snapshots, runs the Mastra tutor, validates answers, processes PDFs, proxies SerpApi and mints Bolna voice sessions.
 - **Typed tutor:** Mastra orchestrates `openai/gpt-oss-120b` through Groq. The server sends a bounded lesson snapshot and a strict output schema, then checks every returned evidence ID and component target before the answer reaches the scene. The browser cannot inject its own prompt text.
-- **Voice tutor:** a separate Bolna conversation path. Deepgram `nova-3` handles speech-to-text, OpenAI `gpt-4.1-mini` handles the reply, and ElevenLabs `eleven_turbo_v2_5` (voice Angelica) handles English speech. Hindi uses Sarvam `bulbul:v3` (voice Suhani). The voice path is consent-gated, capped at three minutes, and has no scene tools.
+- **Speech:** one Speak control in chat. Wispr inserts dictated text, and Bolna reads the chat response using ElevenLabs English or Sarvam Hindi. Stop dictation switches to continuous Bolna listening with Deepgram transcription. An authenticated OpenAI-compatible bridge sends each transcript to the same desk handler as typed chat; commands update the scene, questions use the existing Mastra/Groq tutor, and the actual result returns to Bolna for speech. Continuous sessions are capped at three minutes.
 - **ElevenLabs access:** Bolna is the orchestrator, not a model owner. Its preferred-model bundle includes ElevenLabs `eleven_turbo_v2_5`, so Pinlight uses Bolna's provider integration and does not need a direct `ELEVENLABS_API_KEY` for the standard Angelica voice. A cloned or custom voice would require connecting your own ElevenLabs account in Bolna.
 - **Data:** Supabase provides Postgres, row-level security and private document storage. Auth0 provides hosted sign-in and audience-bound API tokens. Local development uses SQLite for documents and processing jobs.
 - **Documents:** PDF.js extracts text with coordinates, Tesseract.js handles image-only pages, and Docling is an optional local table-layout worker. Zod and source checks remove unsupported references, numbers and pin labels.
@@ -44,7 +43,7 @@ Pinlight is split into a browser desk, a Node API and a small set of provider in
 
 Open weights leave room to change inference providers, while the open agent framework makes the typed tutor workflow inspectable and adaptable. Current AI inference is hosted and requires internet access. Provider credentials stay on the server.
 
-**Current limits:** generated geometry remains approximate. Source checks reduce unsupported claims but do not independently verify every extracted relationship. Uploaded devices do not automatically become electrically accurate simulations. The new experiments solve ideal teaching circuits with explicit example values. Browser clients cannot supply their own prompt or override the lesson evidence set. The voice tutor is a separate conversation path: it does not control the scene, has no live tool access and has not been measured across devices. Voice sessions use account credits and may be stored by the voice service.
+**Current limits:** generated geometry remains approximate. Source checks reduce unsupported claims but do not independently verify every extracted relationship. Uploaded devices do not automatically become electrically accurate simulations. The new experiments solve ideal teaching circuits with explicit example values. Browser clients cannot supply their own prompt or override the lesson evidence set. Voice command delivery requires the desk tab to remain open and connected; reliability has not been measured across devices. Voice sessions use account credits and may be stored by the voice service.
 
 ## Challenge integrations
 
@@ -89,6 +88,10 @@ npm run build
 
 Board names belong to their owners. Pinlight is not affiliated with Raspberry Pi Ltd or Arduino.
 
-### Bolna step narration rollout
+### Unified speech rollout
 
-Deploy the updated API (which supplies server-owned `voice_opening`) and frontend together, then run `npm run configure:learning-voice` using the same Bolna account. This updates only the dedicated learning agent welcome message so it reads the current step at call start. The old Tracepoint agent is preserved. Both narration and conversation use the same consented Bolna WebRTC call; the active learning desk no longer uses browser speech synthesis. Confirm a connected call and nonzero duration in Bolna before claiming successful ElevenLabs or Sarvam audio.
+Deploy the API and frontend, then run `npm run configure:learning-voice`. The script checks the live bridge, registers its authenticated custom model endpoint with Bolna, and updates only the dedicated learning agent. It preserves the archived Tracepoint agent. `BOLNA_BRIDGE_URL` can override the default public API endpoint; its server-only bearer key is derived from `BOLNA_API_KEY`, so rotating that key requires re-registering the custom model.
+
+Press **Speak** in chat and consent once. Dictate with Wispr or type; replies are read through a short, microphone-muted Bolna call. **Stop dictation** switches to a continuous microphone call; say **stop listening** to finish. Text dictation and continuous listening share the same chat, lesson navigation and scene commands. A playback call closes after detected speech ends, with a maximum duration as a backstop. These calls use Bolna credits; there is no browser speech-synthesis fallback.
+
+The bridge uses separate expiring capabilities for the browser and provider, deduplicates retried turns and waits for the desk's result before speaking. A disconnected tab returns a timeout message rather than a fabricated successful action. A live microphone check is still required after deployment.

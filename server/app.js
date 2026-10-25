@@ -11,6 +11,7 @@ import {createProcessingService} from './learning/processing.js';
 import {createDeviceExtractor} from './learning/extractor.js';
 import {extractLayout} from './learning/layout.js';
 import {createLearningVoiceService} from './learning/voice.js';
+import {createVoiceBridge,sendVoiceCompletion,VOICE_MODEL} from './learning/voice-bridge.js';
 import {createAuth0Verifier} from './services/auth0.js';
 import {createReferenceService} from './learning/references.js';
 import { board,experiments,sources } from '../shared/learning/raspberry-pi-5.js';
@@ -19,7 +20,7 @@ const fail = (message, status) => Object.assign(new Error(message), { status });
 // Public deployment: extra hosts and browser origins come from the environment; local defaults are unchanged.
 const listEnv = name => (process.env[name] || '').split(',').map(s => s.trim()).filter(Boolean);
 // Requests that spend provider credits or disk are capped per client IP (and overall) when RATE_LIMIT=on.
-const limits = { ask: [20, 600e3, 400], voice: [4, 3600e3, 40], upload: [10, 3600e3, 100], command: [30, 600e3, 600] };
+const limits = { ask: [20, 600e3, 400], voice: [60, 3600e3, 300], upload: [10, 3600e3, 100], command: [30, 600e3, 600] };
 function createLimiter() {
   const hits = new Map(), count = (key, windowMs) => { const now = Date.now(), list = (hits.get(key) || []).filter(t => now - t < windowMs); hits.set(key, list); return list; };
   return (request, bucket) => {
@@ -44,7 +45,8 @@ export function createApplication({ projectRoot = process.cwd(), databasePath = 
   const extractor=createDeviceExtractor(),processing=createProcessingService({store,documents,cacheKey:`${extractor.status().model}:${process.env.DOCLING_ENABLED||'off'}`,extract:args=>extractor.extract(args),layout:doc=>extractLayout({file:resolve(documentsDir,`${doc.id}.pdf`)}),...processingOptions});
   const extension=extensionFactory?.({store,documents});
   const auth=createAuth0Verifier(authOptions),references=createReferenceService({store,...referenceOptions});
-  const tutor=createTutorService({store,...learningOptions}),learningVoice=createLearningVoiceService({store,...learningVoiceOptions});
+  const voiceBridge=createVoiceBridge();
+  const tutor=createTutorService({store,...learningOptions}),learningVoice=createLearningVoiceService({store,bridge:voiceBridge,...learningVoiceOptions});
   const allowedHosts = new Set(['localhost', '127.0.0.1', '[::1]', ...listEnv('PUBLIC_HOSTS')]);
   const allowedOrigins = new Set(['http://localhost:5173', 'http://127.0.0.1:5173', ...listEnv('ALLOWED_ORIGINS')]);
   const limited = process.env.RATE_LIMIT === 'on' ? createLimiter() : () => false;
@@ -65,6 +67,12 @@ export function createApplication({ projectRoot = process.cwd(), databasePath = 
         if ((origin && !trusted && origin !== `http://${request.headers.host}`) || (request.headers['sec-fetch-site'] === 'cross-site' && !trusted)) throw fail('Cross-site writes are not allowed.', 403);
       }
       const url = new URL(request.url, 'http://localhost');
+      if(url.pathname.startsWith('/api/learning/voice-model/')){
+        if(!voiceBridge.authenticate(request.headers.authorization))throw fail('Unauthorized voice provider.',401);
+        if(url.pathname==='/api/learning/voice-model/models'&&request.method==='GET'){response.setHeader('Content-Type','application/json');return response.end(JSON.stringify({object:'list',data:[{id:VOICE_MODEL,object:'model',owned_by:'pinlight'}]}));}
+        if(url.pathname==='/api/learning/voice-model/chat/completions'&&request.method==='POST'){const input=await body(request);return sendVoiceCompletion(response,await voiceBridge.complete(input),input.stream!==false);}
+        throw fail('Not found.',404);
+      }
       const identity=await auth.authenticate(request.headers.authorization);
       const canReadDocument=documentId=>{const access=store.get('document-access',documentId);return !access||access.public||!!identity&&access.owners.includes(identity.ownerKey);};
       const requireDocument=documentId=>{if(!canReadDocument(documentId))throw fail('Document not found.',404);};
@@ -93,6 +101,12 @@ export function createApplication({ projectRoot = process.cwd(), databasePath = 
       if(kind==='learning'&&id==='jobs'&&action&&method==='GET'){idSchema.parse(action);const job=processing.get(action);requireDocument(job.documentId);return send(job);}
       if(kind==='learning'&&id==='status'&&method==='GET')return send({tutor:tutor.status(),voice:learningVoice.status(),extraction:extractor.status(),processing:processing.status(),auth:auth.status(),references:references.status()});
       if(kind==='learning'&&id==='ask'&&method==='POST'){const input=await body(request);if(input.context?.documentId)requireDocument(input.context.documentId);return send(await tutor.ask(input));}
+      if(kind==='learning'&&['voice-poll','voice-reply','voice-close'].includes(id)&&method==='POST'){
+        const input=z.object({token:z.string().uuid(),id:z.string().uuid().optional(),text:z.string().min(1).max(2400).optional()}).strict().parse(await body(request));
+        if(id==='voice-poll')return send(voiceBridge.poll(input.token));
+        if(id==='voice-close')return send(voiceBridge.close(input.token));
+        return send(voiceBridge.reply(input.token,input.id,input.text));
+      }
       if(kind==='learning'&&id==='voice-session'&&method==='POST'){const input=await body(request);if(input.context?.documentId)requireDocument(input.context.documentId);return send(await learningVoice.mint(input),201);}
       if (kind === 'learning' && id === 'catalog' && method === 'GET') return send({board,experiments,sources,stage:'detailed-learning-desk',continuousVoice:learningVoice.status().configured,liveSceneTools:false,automatic3d:false});
       if (kind === 'documents' && method === 'GET' && !id) return send(store.list('document').filter(d=>canReadDocument(d.id)).map(({ pages, references, ...d }) => ({ ...d, pageCount: pages.length, referenceCount: references.length, textCount: pages.reduce((n, p) => n + p.items.length, 0) })));

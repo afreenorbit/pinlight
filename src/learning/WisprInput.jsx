@@ -5,7 +5,7 @@ import {useEffect,useRef,useState} from 'react';
 // Auto-send treats a burst insertion (paste, or many characters arriving faster than anyone types)
 // followed by a short quiet pause as a finished dictation. Typing by hand never auto-sends.
 const SETTLE_MS=1100,BURST_GAP_MS=35,BURST_CHARS=6;
-export default function WisprInput({id,value,onChange,onSend,disabled,busy,placeholder}){
+export default function WisprInput({id,value,onChange,onSend,disabled,busy,placeholder,dictating=false}){
  const input=useRef(null),timer=useRef(null),burst=useRef({chars:0,at:0}),lastSent=useRef({text:'',at:0});
  const [auto,setAuto]=useState(()=>{try{return localStorage.getItem('pinlight-wispr-auto')!=='off';}catch{return true;}});
  const [pending,setPending]=useState(false);
@@ -20,12 +20,12 @@ export default function WisprInput({id,value,onChange,onSend,disabled,busy,place
   const next=e.target.value,added=next.length-value.length,type=e.nativeEvent.inputType||'',now=performance.now();onChange(next);
   burst.current=now-burst.current.at<BURST_GAP_MS?{chars:burst.current.chars+Math.max(added,0),at:now}:{chars:Math.max(added,0),at:now};
   const dictated=added>0&&(type.startsWith('insertFromPaste')||type==='insertReplacementText'||added>=BURST_CHARS||burst.current.chars>=BURST_CHARS);
-  if(auto&&dictated&&next.trim()){clearTimeout(timer.current);setPending(true);timer.current=setTimeout(()=>{setPending(false);send(input.current?.value||'');},SETTLE_MS);}
+  if((auto||dictating)&&dictated&&next.trim()){clearTimeout(timer.current);setPending(true);timer.current=setTimeout(()=>{setPending(false);send(input.current?.value||'');},SETTLE_MS);}
   else if(!dictated)cancel();
  };
  const onKeyDown=e=>{if(e.key==='Escape'&&pending){e.preventDefault();cancel();return;}if(e.key==='Enter'){e.preventDefault();send(value);return;}if(!['Control','Meta','Shift','Alt'].includes(e.key))cancel();};
  return <div className={`wispr-input ${pending?'is-pending':''}`}>
   <div className="wispr-field"><input id={id} ref={input} value={value} onInput={onInput} onChange={()=>{}} onKeyDown={onKeyDown} placeholder={placeholder} disabled={disabled} maxLength={1000} autoComplete="off"/><button type="button" className="button button-dark" disabled={!value.trim()||busy||disabled} onClick={()=>send(value)}>{busy?'…':<>{"Send "}<Icon name="diagonal" size={16}/></>}</button></div>
-  <div className="wispr-bar"><label><input type="checkbox" checked={auto} onChange={e=>{setAuto(e.target.checked);cancel();}}/> Auto-send dictation</label><span role="status">{pending?<>Sending… <button type="button" onClick={cancel}>Esc to cancel</button></>:auto?<>Hold <kbd>Ctrl</kbd>+<kbd>Win</kbd>, speak, release. It sends itself.</>:<>Dictate, then press <kbd>Enter</kbd>.</>}</span></div>
+  <div className="wispr-bar"><label><input type="checkbox" checked={auto} onChange={e=>{setAuto(e.target.checked);cancel();}}/> Auto-send dictation</label><span role="status">{pending?<>Sending… <button type="button" onClick={cancel}>Esc to cancel</button></>:(auto||dictating)?<>Hold <kbd>Ctrl</kbd>+<kbd>Win</kbd>, speak, release. It sends itself.</>:<>Dictate, then press <kbd>Enter</kbd>.</>}</span></div>
  </div>;
 }

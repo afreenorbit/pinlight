@@ -22,8 +22,8 @@ export default function Learn(){
  const [boardId,setBoardId]=useState('raspberry-pi-5'),[document,setDocument]=useState(null),[documents,setDocuments]=useState([]),[uploading,setUploading]=useState(false),[sourceMessage,setSourceMessage]=useState('');
  const {board,experiments,pins,sources}=getPackage(boardId),pi=boardId==='raspberry-pi-5';
  const [mode,setMode]=useState('walkthrough'),[step,setStep]=useState(0),[experimentId,setExperimentId]=useState('first-light'),[command,setCommand]=useState(''),[running,setRunning]=useState(false),[period,setPeriod]=useState(1000),[lit,setLit]=useState(false),[feedback,setFeedback]=useState(null),[tab,setTab]=useState('overview'),[pin,setPin]=useState(11),[done,setDone]=useState(loadProgress),[rgb,setRgb]=useState([.7,.2,1]),[angle,setAngle]=useState(90),[sweep,setSweep]=useState(true),[pitch,setPitch]=useState(440),[pressed,setPressed]=useState(false),[sound,setSound]=useState(true),[showCode,setShowCode]=useState(false),[focusRequest,setFocusRequest]=useState(0),[cameraCommand,setCameraCommand]=useState(null),[part,setPart]=useState(null),[spotOff,setSpotOff]=useState(false);
- const voicePanel=useRef(null),audio=useRef(null),questionRequest=useRef(null),deskRef=useRef(null),uploadRef=useRef(null),pressTimer=useRef(null),lastAnswer=useRef(null),threadRef=useRef(null),currentRef=useRef(null);
- const [connection,setConnection]=useState(null),[asking,setAsking]=useState(false),[voiceActive,setVoiceActive]=useState(false),handsFree=false;
+ const voiceControl=useRef(null),audio=useRef(null),questionRequest=useRef(null),deskRef=useRef(null),uploadRef=useRef(null),pressTimer=useRef(null),lastAnswer=useRef(null),threadRef=useRef(null),currentRef=useRef(null);
+ const [connection,setConnection]=useState(null),[asking,setAsking]=useState(false),[voiceActive,setVoiceActive]=useState(false),[dictating,setDictating]=useState(false),handsFree=false;
  // Conversation thread: always shown, saved per learning item and chat when signed in.
  const [thread,setThread]=useState([]),[item,setItem]=useState(null),[chats,setChats]=useState([]),[chatId,setChatId]=useState(null),[cloudNote,setCloudNote]=useState('');
  const experiment=mode==='experiment',lesson=experiments.find(e=>e.id===experimentId)||experiments[0],steps=experiment?lesson.steps:board.components,current=steps[step]||steps[0],focus=experiment?'gpio':current.id,narration=experiment?current.text:current.detail,key=`${boardId}/${experiment?`${lesson.id}/${current.id}`:current.id}`;
@@ -108,7 +108,8 @@ export default function Learn(){
   return ask(text);
  };
  const converse=async text=>{lastAnswer.current=null;setThread(t=>[...t,{role:'user',text}]);const reply=(await handleInput(text))||'Done.';const meta=lastAnswer.current,answer={role:'assistant',text:reply,engine:meta?.engine||'command',notice:meta?.notice,sources:(meta?.sources||[meta?.source]).filter(id=>sources[id])};setThread(t=>[...t,answer]);save([{role:'user',text},answer]);return reply;};
- const submit=async e=>{e.preventDefault();if(asking||voiceActive)return;const text=command.trim();if(!text)return;setCommand('');await converse(text);};
+ const chatSend=async text=>{if(/^stop dictation[.!?]?$/i.test(text.trim())&&voiceControl.current?.isEnabled()){await voiceControl.current.stopDictation();return;}const reply=await converse(text);if(reply)voiceControl.current?.speak(reply);};
+ const submit=async e=>{e.preventDefault();if(asking)return;const text=command.trim();if(!text)return;setCommand('');await chatSend(text);};
  const upload=async e=>{const input=e.target,file=input.files?.[0];if(!file)return;setUploading(true);setSourceMessage('Reading the PDF…');setCloudNote('');
   try{const doc=await importLearningPdf(file);setDocuments(rows=>[doc,...rows.filter(d=>d.id!==doc.id)]);setDocument(doc);setJourneyOpen(true);stop();setSourceMessage('');
    if(user){try{const row=await ensureItem({slug:`doc:${doc.revision}`,kind:doc.kind,title:doc.title,localDocumentId:doc.id});await uploadItemPdf(row,file);}catch(error){setCloudNote(`PDF saved locally; cloud upload failed: ${error.message}`);}}
@@ -144,9 +145,9 @@ export default function Learn(){
      {thread.map((m,i)=><div key={i} className={`chat-msg ${m.role}`}><small>{m.role==='user'?'You':m.engine==='ai'?'AI tutor · source-linked':m.engine==='command'?'Desk':m.notice||'Lesson guide'}</small><p>{m.text}</p>{m.sources?.filter(id=>sources[id]).map(id=><a key={id} href={sources[id].url} target="_blank" rel="noreferrer">{sources[id].title}<>{" "}<Icon name="diagonal" size={16}/></></a>)}</div>)}
      {asking&&<div className="chat-msg assistant pending"><small>Thinking…</small><p>…</p></div>}
     </div>
-    <WisprInput id="lesson-command" value={command} onChange={setCommand} onSend={text=>{setCommand('');converse(text);}} busy={asking} disabled={voiceActive} placeholder={experiment?'Why the resistor? · Run it · Slower':'What does RP1 do? · Show GPIO · Next'}/>
+    <WisprInput id="lesson-command" value={command} onChange={setCommand} onSend={text=>{setCommand('');chatSend(text);}} busy={asking} dictating={dictating} placeholder={experiment?'Why the resistor? · Run it · Slower':'What does RP1 do? · Show GPIO · Next'}/>
     {cloudNote&&<p className="command-help" role="alert">{cloudNote}</p>}
-    <details className="studio-voice" ref={voicePanel}><summary>Talk with Bolna <small>English / हिंदी</small></summary><LearningVoice context={context} blocked={false} configured={!!connection?.voice?.configured} onActiveChange={active=>{setVoiceActive(active);if(active){setSound(false);setRunning(false);questionRequest.current?.abort();}}}/></details>
+    <LearningVoice ref={voiceControl} inputId="lesson-command" context={context} configured={!!connection?.voice?.configured} onCommand={converse} onDictationChange={setDictating} onActiveChange={active=>{setVoiceActive(active);if(active)setSound(false);}}/>
    </aside>
    <div className="studio-stage">
     <div className="scene-topline"><span>{experiment?lesson.title.toUpperCase():`${board.name.toUpperCase()} / EXPLORE`}</span>{experiment&&<button className="code-toggle" aria-pressed={showCode} onClick={()=>setShowCode(v=>!v)}>{showCode?'Hide code':'</> Code'}</button>}</div>
@@ -174,7 +175,7 @@ export default function Learn(){
       <div className="trail-circuits">{experiments.map(e=><button key={e.id} onClick={()=>selectLesson(e.id)}><span className={`kit-icon kit-${e.kind}`}><Icon name={e.kind} size={26}/></span><span><strong>{e.title}</strong><small>{e.subtitle}</small></span>{done.includes(`${boardId}/${e.id}/run`)?<b><><Icon name="check" size={16}/></></b>:<b><><Icon name="arrow" size={16}/></></b>}</button>)}</div>
      </>}
     </div>}
-    <button className="text-link read-aloud-setting" onClick={()=>{if(voicePanel.current){voicePanel.current.open=true;voicePanel.current.scrollIntoView({behavior:'smooth',block:'center'});}}}>Read this step aloud with Bolna</button><small>Open the voice controls, choose a language and consent to start the call.</small>
+
    </aside>
   </div>
  </section>;

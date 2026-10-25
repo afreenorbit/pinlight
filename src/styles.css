@@ -216,3 +216,5 @@ html{scroll-padding-top:116px}
 .studio-chat .chat-head>div:first-child{display:block;min-width:0}.studio-chat .chat-head{justify-content:space-between;align-items:flex-start}.studio-chat .chat-head .text-link{font-size:12px;white-space:nowrap}
 .studio .scene-tools,.studio .scene-hover{z-index:5}
 .ui-icon{display:inline-block;vertical-align:middle;flex-shrink:0}.button .ui-icon,.text-link .ui-icon{align-self:center}.studio-upload,.lesson-source,.trail-back,.desk-chat a,.journey-evidence button,.reference-search article a{display:inline-flex;align-items:center;gap:6px}.trail-list>li>button>b .ui-icon{width:15px;height:15px}.studio-upload .ui-icon{margin-right:5px}
+
+.chat-speech{padding:10px 12px;border-top:1px solid #dbe2cf;background:#fbfbf4}.chat-speech-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:11px}.chat-speech-bar .text-link{display:inline-flex;align-items:center;gap:6px;font-size:12px}.chat-speech-bar select{margin-left:auto;padding:5px;font-size:11px}.chat-speech-consent{font-size:12px;line-height:1.7;padding-block:8px}.chat-speech-consent .button{padding:8px 12px;font-size:12px}
