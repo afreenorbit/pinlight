@@ -5,9 +5,7 @@
 
 Pinlight turns electronics PDFs into source-linked learning journeys, alongside prepared Raspberry Pi 5 and Arduino Uno R3 lessons. It brings a selectable 3D board, guided circuit activities, reference code, a source-linked AI tutor and a consent-gated voice tutor into one workspace.
 
-Built for the [Hacktoberfest Open-Source AI Challenge Week 3: Slow and Steady](https://dev.to/challenges/hacktoberfest-week3-2026-10-19).
-
-[Explore Pinlight](https://pinlight.afreenorbit.tech/learn)
+[Explore Pinlight](https://pinlight.afreenorbit.tech/)
 
 ![Pinlight learning desk with tutor chat, an interactive board and a guided trail](docs/blog/s2-trail-focus.png)
 
