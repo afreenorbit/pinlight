@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {devices} from '../shared/learning/devices.js';
+import {devices,adjacentDevice} from '../shared/learning/devices.js';
 import {deviceCircuit} from '../shared/learning/device-circuits.js';
 import {boardAnchor} from '../shared/learning/connections.js';
 import {parseLessonCommand,splitDictation} from '../shared/learning/commands.js';
@@ -30,6 +30,12 @@ test('natural dictation maps to bounded actions and preserves questions',()=>{
  assert.deepEqual(parseLessonCommand('set the temperature to twenty five'),{type:'device-value',value:25});
  assert.deepEqual(parseLessonCommand('set tilt to -30'),{type:'device-value',value:-30});
  assert.deepEqual(parseLessonCommand('set voltage to 1.65'),{type:'device-value',value:1.65});
+ assert.deepEqual(parseLessonCommand('Okay move to the next sensor please.'),{type:'device-browse',direction:1,category:'sensors'});
+ assert.deepEqual(parseLessonCommand('previous chip'),{type:'device-browse',direction:-1,category:'chips'});
+ assert.equal(adjacentDevice('tmp36',1,'sensors').id,'bmp280');
+ assert.equal(adjacentDevice('sht31',1,'sensors').id,'mpu6050');
+ assert.equal(adjacentDevice('vl53l0x',1,'sensors').id,'tmp36');
+ assert.equal(adjacentDevice('ne555',-1,'chips').id,'mcp3008');
  assert.deepEqual(parseLessonCommand('Why does the LED blink?'),{type:'unsupported'});
  assert.equal(splitDictation("Okay let's try the activity, then zoom in and show code").length,3);
  assert.equal(splitDictation('open chips and sensors').length,1);

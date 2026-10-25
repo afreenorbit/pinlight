@@ -13,6 +13,11 @@ export const devices=[
 ];
 export const deviceIds=devices.map(d=>d.id);
 export const deviceById=id=>devices.find(d=>d.id===id);
+export function adjacentDevice(id,direction,category='all'){
+ const list=devices.filter(d=>category==='all'||(category==='chips'?d.category==='Chip':d.category!=='Chip'));
+ const index=list.findIndex(d=>d.id===id);
+ return list[index<0?(direction>0?0:list.length-1):(index+direction+list.length)%list.length];
+}
 export function deviceReading(id,value){
  const device=deviceById(id);if(!device||!Number.isFinite(value)||value<device.experiment.min||value>device.experiment.max)throw Error('Invalid device example value.');
  switch(id){

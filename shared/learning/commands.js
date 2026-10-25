@@ -3,6 +3,8 @@ import {getPackage,findFocus} from './catalog.js';
 export function parseLessonCommand(raw,boardId='raspberry-pi-5'){
  const text=normalizeDictation(raw);
  if(/^(what|why|how|does|is|explain|tell me)\b/.test(text))return {type:'unsupported'};
+ const browse=/^(?:(?:go|move|take me|switch)(?: on)?(?: to)? )?(?:the )?(next|previous|prev)(?: (?:one|1))? (sensor|chip|component|part)(?: in (?:the )?library)?$/.exec(text);
+ if(browse)return {type:'device-browse',direction:browse[1]==='next'?1:-1,category:browse[2]==='sensor'?'sensors':browse[2]==='chip'?'chips':'all'};
  const host=/\b(arduino(?: uno(?: r3)?)?|uno(?: r3)?|raspberry pi(?: 5)?|rpi|pi 5)\b/.exec(text);
  const hostId=host?(/arduino|uno/.test(host[0])?'arduino-uno-r3':'raspberry-pi-5'):null;
  if(/^(?:(?:open|start|try|do|run|connect|set up|show)(?: me)? )(?:this |the |a |an )?(?:activity|sensor activity|chip activity|part activity|experiment for this part)\b/.test(text))return {type:'activity',operation:'open',...(hostId?{boardId:hostId}:{})};

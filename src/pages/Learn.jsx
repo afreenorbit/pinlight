@@ -7,7 +7,7 @@ import {SimulationControls,CodePanel} from '../learning/SimulationLab.jsx';
 import {apiRequest} from '../lib/api.js';
 import BoardScene from '../learning/BoardScene.jsx';
 import DeviceLibrary from '../learning/DeviceLibrary.jsx';
-import {devices,deviceById,deviceSteps} from '../../shared/learning/devices.js';
+import {devices,deviceById,deviceSteps,adjacentDevice} from '../../shared/learning/devices.js';
 import ProjectLab from '../learning/ProjectLab.jsx';
 import {projectLesson,projectSources} from '../../shared/learning/projects.js';
 import {getPackage,findFocus,localAnswer} from '../../shared/learning/catalog.js';
@@ -76,7 +76,7 @@ export default function Learn(){
  const mark=()=>{setDone(v=>v.includes(key)?v:[...v,key]);if(step<steps.length-1)move(1);else setFeedback({text:experiment?'Lesson complete. Try the challenge, or pick another circuit.':'Board tour complete. Now make something with it: open step 02.'});};
  const pressButton=()=>{if(lesson.kind!=='button')return;if(!running)run();setPressed(true);clearTimeout(pressTimer.current);pressTimer.current=setTimeout(()=>setPressed(false),700);};
  const onSceneSelect=id=>{if(!experiment){selectPart(id);return;}if(id==='kit-button'&&lesson.kind==='button'&&running){pressButton();return;}focusPart(id);};
- const openLibrary=id=>{stop();setProject(null);setLibrary(true);if(id)setDeviceId(id);setDeviceStep(0);setFeedback(null);};
+ const openLibrary=id=>{setDeviceAction(null);stop();setProject(null);setLibrary(true);if(id)setDeviceId(id);setDeviceStep(0);setFeedback(null);};
  const openProject=id=>{setLibrary(false);stop();setCameraCommand(null);setProject(id);setProjectStep(0);setProjectAction(null);setFeedback(null);setTab('overview');scrollToDesk();};
  const actProject=action=>setProjectAction({...action,nonce:Date.now()});
  const applyAnswer=(result,text)=>{
@@ -99,6 +99,7 @@ export default function Learn(){
  const enableSound=async value=>{const next=value??!sound;try{if(next)await unlockAudio();setSound(next);return next?(handsFree?'Sound is enabled, but muted while voice control listens to avoid feedback.':'Sound on.'):'Sound muted.';}catch{return 'Audio is unavailable in this browser.';}};
  const handleInput=async text=>{
   const a=parseLessonCommand(text,boardId);
+  if(a.type==='device-browse'){const next=adjacentDevice(deviceId,a.direction,a.category);openLibrary(next.id);return 'Opened '+next.name+'. '+next.summary;}
   if(a.type==='device'){openLibrary(a.id);return deviceById(a.id)?.summary||'Choose a chip or sensor from the library.';}
   if(library){
    if(a.type==='board'){setBoardId(a.boardId);return 'Activity host changed. The 3D connections and code now follow the selected board.';}
@@ -174,7 +175,7 @@ export default function Learn(){
      {thread.map((m,i)=><div key={i} className={`chat-msg ${m.role}`}><small>{m.role==='user'?'You':m.engine==='ai'?'AI tutor · source-linked':m.engine==='command'?'Desk':m.notice||'Lesson guide'}</small><p>{m.text}</p>{m.sources?.filter(id=>sources[id]).map(id=><a key={id} href={sources[id].url} target="_blank" rel="noreferrer">{sources[id].title}<>{" "}<Icon name="diagonal" size={16}/></></a>)}</div>)}
      {asking&&<div className="chat-msg assistant pending"><small>Thinking…</small><p>…</p></div>}
     </div>
-    <WisprInput id="lesson-command" value={command} onChange={setCommand} onSend={text=>{setCommand('');chatSend(text);}} busy={asking} dictating={dictating} placeholder={experiment?'Why the resistor? · Run it · Slower':'What does RP1 do? · Show GPIO · Next'}/>
+    <WisprInput id="lesson-command" value={command} onChange={setCommand} onWisprMode={()=>voiceControl.current?.stop()} onSend={text=>{setCommand('');return chatSend(text);}} busy={asking} dictating={dictating} placeholder={experiment?'Why the resistor? · Run it · Slower':'What does RP1 do? · Show GPIO · Next'}/>
     {cloudNote&&<p className="command-help" role="alert">{cloudNote}</p>}
     <LearningVoice ref={voiceControl} inputId="lesson-command" context={context} configured={!!connection?.voice?.configured} onCommand={converse} onDictationChange={setDictating} onActiveChange={active=>{setVoiceActive(active);if(active)setSound(false);}}/>
    </aside>
@@ -209,4 +210,3 @@ export default function Learn(){
   </div>
  </section>;
 }
-

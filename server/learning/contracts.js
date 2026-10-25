@@ -3,6 +3,7 @@ import {deviceIds} from '../../shared/learning/devices.js';
 import {packages,boardIds} from '../../shared/learning/catalog.js';
 const componentIds=[...new Set(Object.values(packages).flatMap(p=>p.board.components.map(c=>c.id)))];
 export const sceneAction=z.discriminatedUnion('type',[
+ z.object({type:z.literal('device-browse'),direction:z.union([z.literal(1),z.literal(-1)]),category:z.enum(['sensors','chips','all'])}).strict(),
  z.object({type:z.literal('activity'),operation:z.enum(['open','close','reset','connections']),boardId:z.enum(boardIds).optional()}).strict(),
  z.object({type:z.literal('device-value'),value:z.number().finite().min(-100000).max(100000)}).strict(),
  z.object({type:z.literal('device'),id:z.enum(deviceIds)}).strict(),
