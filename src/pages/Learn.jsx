@@ -6,6 +6,8 @@ import WisprInput from '../learning/WisprInput.jsx';
 import {SimulationControls,CodePanel} from '../learning/SimulationLab.jsx';
 import {apiRequest} from '../lib/api.js';
 import BoardScene from '../learning/BoardScene.jsx';
+import DeviceLibrary from '../learning/DeviceLibrary.jsx';
+import {devices,deviceById,deviceSteps} from '../../shared/learning/devices.js';
 import ProjectLab from '../learning/ProjectLab.jsx';
 import {projectLesson,projectSources} from '../../shared/learning/projects.js';
 import {getPackage,findFocus,localAnswer} from '../../shared/learning/catalog.js';
@@ -21,22 +23,23 @@ const SERVO_SWEEP=[20,90,160,90];
 export default function Learn(){
  const {user}=useAuth();
  const [journeyOpen,setJourneyOpen]=useState(false);
+ const [library,setLibrary]=useState(false),[deviceId,setDeviceId]=useState('tmp36'),[deviceStep,setDeviceStep]=useState(0);
  const [project,setProject]=useState(null),[projectStep,setProjectStep]=useState(0),[projectAction,setProjectAction]=useState(null);
  const [boardId,setBoardId]=useState('raspberry-pi-5'),[document,setDocument]=useState(null),[documents,setDocuments]=useState([]),[uploading,setUploading]=useState(false),[sourceMessage,setSourceMessage]=useState('');
- const {board,experiments,pins,sources:boardSources}=getPackage(boardId),sources={...boardSources,...projectSources},pi=boardId==='raspberry-pi-5';
+ const {board,experiments,pins,sources:boardSources}=getPackage(boardId),sources={...boardSources,...projectSources,...Object.fromEntries(devices.map(d=>[`device-${d.id}`,{title:`${d.name} source`,url:d.source}]))},pi=boardId==='raspberry-pi-5';
  const [mode,setMode]=useState('walkthrough'),[step,setStep]=useState(0),[experimentId,setExperimentId]=useState('first-light'),[command,setCommand]=useState(''),[running,setRunning]=useState(false),[period,setPeriod]=useState(1000),[lit,setLit]=useState(false),[feedback,setFeedback]=useState(null),[tab,setTab]=useState('overview'),[pin,setPin]=useState(11),[done,setDone]=useState(loadProgress),[rgb,setRgb]=useState([.7,.2,1]),[angle,setAngle]=useState(90),[sweep,setSweep]=useState(true),[pitch,setPitch]=useState(440),[pressed,setPressed]=useState(false),[sound,setSound]=useState(true),[showCode,setShowCode]=useState(true),[focusRequest,setFocusRequest]=useState(0),[cameraCommand,setCameraCommand]=useState(null),[part,setPart]=useState(null),[spotOff,setSpotOff]=useState(false);
  const voiceControl=useRef(null),audio=useRef(null),questionRequest=useRef(null),deskRef=useRef(null),uploadRef=useRef(null),pressTimer=useRef(null),lastAnswer=useRef(null),threadRef=useRef(null),currentRef=useRef(null);
  const [connection,setConnection]=useState(null),[asking,setAsking]=useState(false),[voiceActive,setVoiceActive]=useState(false),[dictating,setDictating]=useState(false),handsFree=false;
  // Conversation thread: always shown, saved per learning item and chat when signed in.
  const [thread,setThread]=useState([]),[item,setItem]=useState(null),[chats,setChats]=useState([]),[chatId,setChatId]=useState(null),[cloudNote,setCloudNote]=useState('');
  const experiment=mode==='experiment',lesson=experiments.find(e=>e.id===experimentId)||experiments[0],steps=experiment?lesson.steps:board.components,current=steps[step]||steps[0],focus=experiment?'gpio':current.id,narration=experiment?current.text:current.detail,key=`${boardId}/${experiment?`${lesson.id}/${current.id}`:current.id}`;
- const context={...(project?{projectId:project,projectStep}:{}),boardId,...(document?{documentId:document.id}:{}),mode:project?'walkthrough':mode,component:project?(project==='camera-lab'&&pi?'mipi':'gpio'):focus,experimentId:lesson.id,step:project?0:step};
+ const context={...(library?{deviceId,deviceStep}:project?{projectId:project,projectStep}:{}),boardId,...(document&&!library?{documentId:document.id}:{}),mode:library||project?'walkthrough':mode,component:library?'gpio':project?(project==='camera-lab'&&pi?'mipi':'gpio'):focus,experimentId:lesson.id,step:library||project?0:step};
  const selectedPin=pins.find(p=>p.physical===pin)||pins[0];
  const partInfo=part&&(kitParts[part]||board.components.find(c=>c.id===part));
- const docItem=document&&document.status!=='supported',itemSlug=docItem?`doc:${document.revision}`:`board:${boardId}`;
- useEffect(()=>{let alive=true;apiRequest('/learning/status').then(s=>{if(alive)setConnection(s);}).catch(()=>{});apiRequest('/learning/documents').then(rows=>{if(!alive)return;setDocuments(rows);const first=rows.find(d=>d.status==='supported'&&d.matches[0].boardId==='raspberry-pi-5');if(first)setDocument(d=>d||first);}).catch(()=>setSourceMessage('Start the local API to load or upload PDFs.'));return()=>{alive=false;questionRequest.current?.abort();};},[]);
+ const docItem=document&&document.status!=='supported',itemSlug=library?`device:${deviceId}`:docItem?`doc:${document.revision}`:`board:${boardId}`;
+ useEffect(()=>{let alive=true;apiRequest('/learning/status').then(s=>{if(alive)setConnection(s);}).catch(()=>{});apiRequest('/learning/documents').then(rows=>{if(!alive)return;setDocuments(rows);const requested=new URLSearchParams(location.search).get('document');if(requested){const saved=rows.find(d=>d.id===requested);if(saved){setDocument(saved);setJourneyOpen(true);return;}}const first=rows.find(d=>d.status==='supported'&&d.matches[0].boardId==='raspberry-pi-5');if(first)setDocument(d=>d||first);}).catch(()=>setSourceMessage('Start the local API to load or upload PDFs.'));return()=>{alive=false;questionRequest.current?.abort();};},[]);
  useEffect(()=>{try{localStorage.setItem('pinlight-progress-v3',JSON.stringify(done));}catch{}},[done]);
- useEffect(()=>{questionRequest.current?.abort();setAsking(false);},[mode,experimentId,step,boardId]);
+ useEffect(()=>{questionRequest.current?.abort();setAsking(false);},[mode,experimentId,step,boardId,library,deviceId,deviceStep,project,projectStep]);
  useEffect(()=>{if(!running){setLit(false);return;}setLit(true);const t=setInterval(()=>setLit(v=>!v),period);return()=>clearInterval(t);},[running,period]);
  useEffect(()=>{if(!running||lesson.kind!=='servo'||!sweep)return;let i=0;setAngle(SERVO_SWEEP[0]);const t=setInterval(()=>{i=(i+1)%SERVO_SWEEP.length;setAngle(SERVO_SWEEP[i]);},Math.max(500,period));return()=>clearInterval(t);},[running,lesson.kind,sweep,period]);
  useEffect(()=>{if(!sound||!running||lesson.kind!=='buzzer'||!lit||voiceActive||handsFree)return;const ctx=audio.current;if(!ctx)return;const oscillator=ctx.createOscillator(),gain=ctx.createGain();oscillator.type='square';gain.gain.setValueAtTime(0,ctx.currentTime);gain.gain.linearRampToValueAtTime(.05,ctx.currentTime+.01);oscillator.frequency.value=pitch;oscillator.connect(gain);gain.connect(ctx.destination);oscillator.start();return()=>{gain.gain.linearRampToValueAtTime(0,ctx.currentTime+.02);oscillator.stop(ctx.currentTime+.03);};},[sound,running,lit,lesson.kind,pitch,voiceActive,handsFree]);
@@ -48,11 +51,11 @@ export default function Learn(){
  useEffect(()=>{currentRef.current?.scrollIntoView({block:'nearest',behavior:'smooth'});},[step,mode,experimentId]);
  useEffect(()=>{const onKey=e=>{if(e.key==='Escape'&&!window.document.activeElement?.matches('input,textarea,select'))clearSpot();};addEventListener('keydown',onKey);return()=>removeEventListener('keydown',onKey);},[]);
  // Opening /learn?item=…&chat=… from My desk restores that board/document and conversation.
- useEffect(()=>{if(!user)return;const params=new URLSearchParams(location.search),id=params.get('item');if(!id)return;getItem(id).then(row=>{if(!row)return;if(row.board_id)setBoardId(row.board_id);if(row.local_document_id||row.file_path)restoreLearningDocument(row).then(doc=>{setDocument(doc);setJourneyOpen(row.slug.startsWith('doc:'));}).catch(e=>setCloudNote(e.message));setItem(row);const chat=params.get('chat');listChats(row.id).then(list=>{setChats(list);const pick=list.find(c=>c.id===chat)||list[0];if(pick)openChat(pick.id);});}).catch(e=>setCloudNote(e.message));},[user]);
+ useEffect(()=>{if(!user)return;const params=new URLSearchParams(location.search),id=params.get('item');if(!id)return;getItem(id).then(row=>{if(!row)return;if(row.slug.startsWith('device:')&&deviceById(row.slug.slice(7))){setDeviceId(row.slug.slice(7));setLibrary(true);setProject(null);}if(row.board_id)setBoardId(row.board_id);if(row.local_document_id||row.file_path)restoreLearningDocument(row).then(doc=>{setDocument(doc);setJourneyOpen(row.slug.startsWith('doc:'));}).catch(e=>setCloudNote(e.message));setItem(row);const chat=params.get('chat');listChats(row.id).then(list=>{setChats(list);const pick=list.find(c=>c.id===chat)||list[0];if(pick)openChat(pick.id);});}).catch(e=>setCloudNote(e.message));},[user]);
  // A new board or document starts a fresh thread.
  useEffect(()=>{if(item&&item.slug===itemSlug)return;setItem(null);setChats([]);setChatId(null);setThread([]);if(!user)return;listChatsFor(itemSlug);},[itemSlug,user]);
  const listChatsFor=async slug=>{try{const row=await findItem(slug);if(!row)return;setItem(row);setChats(await listChats(row.id));}catch(e){setCloudNote(e.message);}};
- const ensureCurrentItem=async(slug=itemSlug)=>{if(item?.slug===slug)return item;const row=await ensureItem(docItem?{slug,kind:document.kind||'other',title:document.title,localDocumentId:document.id}:{slug,kind:'board',title:board.name,boardId,localDocumentId:document?.id||null});setItem(row);return row;};
+ const ensureCurrentItem=async(slug=itemSlug)=>{if(item?.slug===slug)return item;const row=await ensureItem(library?{slug,kind:deviceById(deviceId).category==='Chip'?'chip':'module',title:deviceById(deviceId).name}:docItem?{slug,kind:document.kind||'other',title:document.title,localDocumentId:document.id}:{slug,kind:'board',title:board.name,boardId,localDocumentId:document?.id||null});setItem(row);return row;};
  const openChat=async id=>{setChatId(id);try{const rows=await listMessages(id);setThread(rows.map(m=>({role:m.role,text:m.content,engine:m.meta?.engine,sources:m.meta?.sources})));}catch(e){setCloudNote(e.message);}};
  const newChat=()=>{setChatId(null);setThread([]);};
  const save=async(messages)=>{if(!user)return;try{const row=await ensureCurrentItem();let id=chatId;if(!id){const chat=await createChat(row.id,messages[0].text);id=chat.id;setChatId(id);setChats(list=>[chat,...list]);}await addMessages(id,messages);setCloudNote('');}catch(e){setCloudNote(`Not saved: ${e.message}`);}};
@@ -63,19 +66,20 @@ export default function Learn(){
  const stop=()=>{setRunning(false);setPressed(false);};
  // Running always comes from a click or a command, so it is also the moment to unlock browser audio.
  const run=()=>{unlockAudio().catch(()=>{});setPart(null);setStep(3);setRunning(true);};
- const selectLesson=(id,simulate=false)=>{setProject(null);setShowCode(true);stop();setMode('experiment');setExperimentId(id);setPart(null);setTab('overview');setFeedback(null);if(simulate){unlockAudio().catch(()=>{});setStep(3);setRunning(true);}else setStep(0);scrollToDesk();};
- const tour=()=>{setProject(null);stop();setMode('walkthrough');setStep(0);setPart(null);setTab('overview');setFeedback(null);};
- const selectPart=(id,answer=null)=>{setProject(null);const index=board.components.findIndex(c=>c.id===id);if(index<0)return;stop();setMode('walkthrough');setStep(index);setPart(null);setTab('overview');setFocusRequest(n=>n+1);setFeedback(answer);scrollToDesk();};
- const openBoard=(id,doc)=>{setProjectStep(0);setJourneyOpen(false);stop();questionRequest.current?.abort();setBoardId(id);setDocument(doc||documents.find(d=>d.status==='supported'&&d.matches[0].boardId===id)||null);setMode('walkthrough');setStep(0);setPart(null);setTab('overview');setPin(id==='raspberry-pi-5'?11:'D9');setFeedback(null);setFocusRequest(n=>n+1);scrollToDesk();};
+ const selectLesson=(id,simulate=false)=>{setLibrary(false);setProject(null);setShowCode(true);stop();setMode('experiment');setExperimentId(id);setPart(null);setTab('overview');setFeedback(null);if(simulate){unlockAudio().catch(()=>{});setStep(3);setRunning(true);}else setStep(0);scrollToDesk();};
+ const tour=()=>{setLibrary(false);setProject(null);stop();setMode('walkthrough');setStep(0);setPart(null);setTab('overview');setFeedback(null);};
+ const selectPart=(id,answer=null)=>{setLibrary(false);setProject(null);const index=board.components.findIndex(c=>c.id===id);if(index<0)return;stop();setMode('walkthrough');setStep(index);setPart(null);setTab('overview');setFocusRequest(n=>n+1);setFeedback(answer);scrollToDesk();};
+ const openBoard=(id,doc)=>{setLibrary(false);setProjectStep(0);setJourneyOpen(false);stop();questionRequest.current?.abort();setBoardId(id);setDocument(doc||documents.find(d=>d.status==='supported'&&d.matches[0].boardId===id)||null);setMode('walkthrough');setStep(0);setPart(null);setTab('overview');setPin(id==='raspberry-pi-5'?11:'D9');setFeedback(null);setFocusRequest(n=>n+1);scrollToDesk();};
  const goStep=i=>{if(experiment&&i===steps.length-1){run();return steps[i].text;}stop();setPart(null);setStep(i);setTab('overview');setFeedback(null);return experiment?steps[i].text:steps[i].detail;};
  const move=d=>{const next=Math.max(0,Math.min(steps.length-1,step+d));scrollToDesk();return goStep(next);};
  const mark=()=>{setDone(v=>v.includes(key)?v:[...v,key]);if(step<steps.length-1)move(1);else setFeedback({text:experiment?'Lesson complete. Try the challenge, or pick another circuit.':'Board tour complete. Now make something with it: open step 02.'});};
  const pressButton=()=>{if(lesson.kind!=='button')return;if(!running)run();setPressed(true);clearTimeout(pressTimer.current);pressTimer.current=setTimeout(()=>setPressed(false),700);};
  const onSceneSelect=id=>{if(!experiment){selectPart(id);return;}if(id==='kit-button'&&lesson.kind==='button'&&running){pressButton();return;}focusPart(id);};
- const openProject=id=>{stop();setCameraCommand(null);setProject(id);setProjectStep(0);setProjectAction(null);setFeedback(null);setTab('overview');scrollToDesk();};
+ const openLibrary=id=>{stop();setProject(null);setLibrary(true);if(id)setDeviceId(id);setDeviceStep(0);setFeedback(null);};
+ const openProject=id=>{setLibrary(false);stop();setCameraCommand(null);setProject(id);setProjectStep(0);setProjectAction(null);setFeedback(null);setTab('overview');scrollToDesk();};
  const actProject=action=>setProjectAction({...action,nonce:Date.now()});
  const applyAnswer=(result,text)=>{
-  if(project){setFeedback(result);return;}
+  if(project||library){setFeedback(result);return;}
   // Inside a circuit, stay in the circuit: spotlight the part the question is about instead of jumping to the board tour.
   if(experiment){setFeedback(result);setPart(findKitPart(text,lesson.kind));scrollToDesk();return;}
   const target=findFocus(text,boardId)||result.focus;
@@ -87,7 +91,7 @@ export default function Learn(){
  const ask=async text=>{
   questionRequest.current?.abort();const request=new AbortController();questionRequest.current=request;setAsking(true);setFeedback(null);let result;
   try{if(!connection?.tutor?.configured)throw Error('offline');result=await apiRequest('/learning/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:text,context}),signal:request.signal});}
-  catch{if(request.signal.aborted)return '';const kit=experiment&&findKitPart(text,lesson.kind);result={...(kit?{text:kitParts[kit].detail,source:'recipes',engine:'local'}:localAnswer(text,focus,boardId)),notice:connection?.tutor?.configured?'AI unavailable; local guide.':'Local guide'};}
+  catch{if(request.signal.aborted)return '';const kit=experiment&&findKitPart(text,lesson.kind);result={...(library?{text:deviceById(deviceId).summary,source:`device-${deviceId}`,engine:'local'}:project?{text:projectLesson(project,boardId).steps[projectStep].text,source:projectLesson(project,boardId).source,engine:'local'}:kit?{text:kitParts[kit].detail,source:'recipes',engine:'local'}:localAnswer(text,focus,boardId)),notice:connection?.tutor?.configured?'AI unavailable; local guide.':'Local guide'};}
   finally{if(questionRequest.current===request)setAsking(false);}
   if(!request.signal.aborted){lastAnswer.current=result;applyAnswer(result,text);return result.text;}return '';
  };
@@ -95,6 +99,12 @@ export default function Learn(){
  const handleInput=async text=>{
   if(!/^can you (show|go|simulate|run|open|press|release|zoom)/i.test(text)&&/^(what|why|how|can|does|is|explain|tell me)|क्या|क्यों|समझाओ/i.test(text))return ask(text);
   const a=parseLessonCommand(text,boardId);
+  if(a.type==='device'){openLibrary(a.id);return deviceById(a.id)?.summary||'Choose a chip or sensor from the library.';}
+  if(library){
+   if(a.type==='next'||a.type==='previous'){const next=Math.max(0,Math.min(3,deviceStep+(a.type==='next'?1:-1)));setDeviceStep(next);return deviceSteps(deviceById(deviceId))[next].text;}
+   if(a.type==='repeat')return deviceSteps(deviceById(deviceId))[deviceStep].text;
+   if(a.type==='tab'){requestAnimationFrame(()=>window.document.querySelector(a.tab==='code'?'.device-detail .reference-code':'.device-pin-buttons')?.scrollIntoView({block:'center',behavior:'smooth'}));return a.tab==='code'?'The example model code is visible below the reading.':'Select a pin below the 3D model to inspect its role.';}
+  }
   if(a.type==='project'){openProject(a.id);return `${projectLesson(a.id,boardId).title}. ${projectLesson(a.id,boardId).steps[0].text}`;}
   if(a.type==='drive'){if(project!=='rover-lab')openProject('rover-lab');actProject(a);return `Canvas rover: ${a.direction}. No physical hardware is connected.`;}
   if(a.type==='capture'){if(project!=='camera-lab')openProject('camera-lab');actProject(a);return 'Capturing the visible preview frame. Download it below the preview.';}
@@ -122,7 +132,7 @@ export default function Learn(){
   if(a.type==='colour'){if(lesson.kind!=='rgb'||!experiment)selectLesson('rgb-colour',true);else run();const channel=['red','green','blue'].indexOf(a.channel);setRgb(v=>v.map((n,i)=>i===channel?a.value:n));return `${a.channel} set to ${Math.round(a.value*100)} percent.`;}
   return ask(text);
  };
- const converse=async text=>{lastAnswer.current=null;setThread(t=>[...t,{role:'user',text}]);const reply=(await handleInput(text))||'Done.';const meta=lastAnswer.current,answer={role:'assistant',text:reply,engine:meta?.engine||'command',notice:meta?.notice,sources:(meta?.sources||[meta?.source]).filter(id=>sources[id])};setThread(t=>[...t,answer]);save([{role:'user',text},answer]);return reply;};
+ const converse=async text=>{lastAnswer.current=null;setThread(t=>[...t,{role:'user',text}]);const reply=await handleInput(text);if(!reply)return '';const meta=lastAnswer.current,answer={role:'assistant',text:reply,engine:meta?.engine||'command',notice:meta?.notice,sources:(meta?.sources||[meta?.source]).filter(id=>sources[id])};setThread(t=>[...t,answer]);save([{role:'user',text},answer]);return reply;};
  const chatSend=async text=>{if(/^stop dictation[.!?]?$/i.test(text.trim())&&voiceControl.current?.isEnabled()){await voiceControl.current.stopDictation();return;}const reply=await converse(text);if(reply)voiceControl.current?.speak(reply);};
  const submit=async e=>{e.preventDefault();if(asking)return;const text=command.trim();if(!text)return;setCommand('');await chatSend(text);};
  const upload=async e=>{const input=e.target,file=input.files?.[0];if(!file)return;setUploading(true);setSourceMessage('Reading the PDF…');setCloudNote('');
@@ -136,7 +146,7 @@ export default function Learn(){
  const toolPartIds=kitPartIds(lesson.kind);
  const callout=feedback?.text&&highlight?.length===1?(feedback.text.match(/^[^.!?]+[.!?]/)?.[0]||feedback.text).slice(0,120):null;
  const boardDone=done.filter(id=>id.startsWith(`${boardId}/`)&&!id.slice(boardId.length+1).includes('/')).length;
- const suggestions=experiment?[`What does the ${kitParts[toolPartIds[1]].name} do here?`,'Run it','Slower','Show code']:['What does the RP1 chip do?','Show GPIO','Explain HDMI','LED experiment'];
+ const suggestions=library?[`Explain ${deviceById(deviceId).name}`,'Next step','How does the interface work?']:project?['Next step','Explain the connection','Show code']:experiment?[`What does the ${kitParts[toolPartIds[1]].name} do here?`,'Run it','Slower','Show code']:['What does the RP1 chip do?','Show GPIO','Explain HDMI','LED experiment'];
  const stepBody=<>
   <p>{narration}</p>
   {experiment&&step===0&&<div className="parts-list">{lesson.parts.map(p=><span key={p}>{p}</span>)}</div>}
@@ -147,10 +157,10 @@ export default function Learn(){
  if(journeyOpen&&document)return <><input ref={uploadRef} type="file" accept="application/pdf,.pdf" hidden onChange={upload}/><Suspense fallback={<p role="status">Opening your PDF journey…</p>}><DocumentJourney expectedPipelineVersion={connection?.processing?.version} key={document.id} document={document} onBack={()=>{setJourneyOpen(false);setDocument(null);}} onUpload={()=>uploadRef.current.click()} uploading={uploading}/></Suspense>{sourceMessage&&<p role="status">{sourceMessage}</p>}{cloudNote&&<p role="alert">{cloudNote}</p>}</>;
  return <section className="studio" ref={deskRef}>
   <header className="studio-bar">
-   <div className="studio-boards" role="group" aria-label="Board">{['raspberry-pi-5','arduino-uno-r3'].map(id=>{const doc=documents.find(d=>d.status==='supported'&&d.matches[0].boardId===id);return <button key={id} aria-pressed={id===boardId} onClick={()=>openBoard(id,doc)} title={doc?`From ${doc.title}`:'Prepared board package'}>{getPackage(id).board.name}</button>;})}<input ref={uploadRef} type="file" accept="application/pdf,.pdf" hidden onChange={upload}/><button className="studio-upload" title={connection?.extraction?.provider==='groq'?'PDF text and selected page images are sent to Groq for analysis':'PDF processing runs locally'} disabled={uploading} onClick={()=>uploadRef.current.click()}>{uploading?'Reading…':'+ Upload a datasheet'}</button></div>
-   {documents.length>0&&<select aria-label="Open uploaded PDF journey" value="" onChange={e=>{const doc=documents.find(d=>d.id===e.target.value);if(doc){stop();setDocument(doc);setJourneyOpen(true);}}}><option value="">Your PDF journeys</option>{documents.map(d=><option key={d.id} value={d.id}>{d.title}</option>)}</select>}
-   <div className="studio-modes" role="group" aria-label="Mode"><button aria-pressed={!experiment&&!project} onClick={tour}><b>1</b> Explore the board</button><button aria-pressed={experiment&&!project} onClick={()=>selectLesson(experimentId)}><b>2</b> Make something</button><button aria-pressed={project==='camera-lab'} onClick={()=>openProject('camera-lab')}><b>3</b> Camera lab</button><button aria-pressed={project==='rover-lab'} onClick={()=>openProject('rover-lab')}><b>4</b> Rover lab</button></div>
-   <div className="studio-status"><span>{boardDone}/{board.components.length} stops</span><span className={`live-pill ${running?'is-live':''}`}>{running?'● RUNNING':'● READY'}</span></div>
+   <div className="studio-boards" role="group" aria-label="Board">{['raspberry-pi-5','arduino-uno-r3'].map(id=>{const doc=documents.find(d=>d.status==='supported'&&d.matches[0].boardId===id);return <button key={id} aria-pressed={id===boardId} onClick={()=>openBoard(id,doc)} title={doc?`From ${doc.title}`:'Prepared board package'}>{getPackage(id).board.name}</button>;})}<button aria-pressed={library} onClick={()=>openLibrary(deviceId)}><Icon name="sensor" size={17}/> Chips & sensors</button><a className="studio-pdf-link" href="/desk"><Icon name="file" size={15}/> My PDFs</a><input ref={uploadRef} type="file" accept="application/pdf,.pdf" hidden onChange={upload}/></div>
+
+   <div className="studio-modes" role="group" aria-label="Mode"><button aria-pressed={!experiment&&!project&&!library} onClick={tour}><b>1</b> Explore the board</button><button aria-pressed={experiment&&!project&&!library} onClick={()=>selectLesson(experimentId)}><b>2</b> Make something</button><button aria-pressed={project==='camera-lab'} onClick={()=>openProject('camera-lab')}><Icon name="camera" size={17}/> Camera lab</button><button aria-pressed={project==='rover-lab'} onClick={()=>openProject('rover-lab')}><Icon name="rover" size={17}/> Rover lab</button></div>
+   <div className="studio-status"><span>{library?`${done.filter(key=>key.startsWith(`device-${deviceId}/`)).length}/4 steps`:`${boardDone}/${board.components.length} stops`}</span><span className={`live-pill ${running?'is-live':''}`}>{running?'● RUNNING':'● READY'}</span></div>
   </header>
   <div className="studio-grid">
    <aside className="studio-chat" aria-label="Tutor chat">
@@ -164,7 +174,7 @@ export default function Learn(){
     {cloudNote&&<p className="command-help" role="alert">{cloudNote}</p>}
     <LearningVoice ref={voiceControl} inputId="lesson-command" context={context} configured={!!connection?.voice?.configured} onCommand={converse} onDictationChange={setDictating} onActiveChange={active=>{setVoiceActive(active);if(active)setSound(false);}}/>
    </aside>
-   {project?<ProjectLab id={project} boardId={boardId} step={projectStep} onStep={setProjectStep} done={done} onComplete={key=>setDone(v=>v.includes(key)?v:[...v,key])} onBack={tour} action={projectAction} viewCommand={cameraCommand}/>:<><div className="studio-stage">
+   {library?<DeviceLibrary id={deviceId} onSelect={id=>{setDeviceId(id);setDeviceStep(0);}} step={deviceStep} onStep={setDeviceStep} boardId={boardId} viewCommand={cameraCommand} done={done} onComplete={key=>setDone(v=>v.includes(key)?v:[...v,key])}/>:project?<ProjectLab id={project} boardId={boardId} step={projectStep} onStep={setProjectStep} done={done} onComplete={key=>setDone(v=>v.includes(key)?v:[...v,key])} onBack={tour} action={projectAction} viewCommand={cameraCommand}/>:<><div className="studio-stage">
     <div className="scene-topline"><span>{experiment?lesson.title.toUpperCase():`${board.name.toUpperCase()} / EXPLORE`}</span>{experiment&&<button className="code-toggle" aria-pressed={showCode} onClick={()=>setShowCode(v=>!v)}>{showCode?'Hide code':'</> Code'}</button>}</div>
     <BoardScene boardId={boardId} lesson={lesson} focus={focus} focusRequest={focusRequest} cameraCommand={cameraCommand} experiment={experiment} kind={lesson.kind} stage={stage} lit={output} rgb={rgb} angle={angle} pressed={running&&pressed} selectedPin={tab==='pinout'&&!spotOff?selectedPin.physical:null} highlight={highlight} callout={callout} onSelect={onSceneSelect} onClear={clearSpot} onPin={p=>{setSpotOff(false);setPin(p);if(!experiment)selectPart('gpio');setTab('pinout');}}/>
     {sourceMessage&&<div className="stage-toast" role="status"><span>{sourceMessage}</span><button onClick={()=>setSourceMessage('')} aria-label="Dismiss"><><Icon name="close" size={16}/></></button></div>}

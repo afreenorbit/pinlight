@@ -8,7 +8,7 @@ export function Brand() {
 
 export default function Layout({ route, children }) {
   const { user } = useAuth();
-  return <>
+  return <div className={`app-shell ${['/learn','/workspace'].includes(route)?'workspace-shell':''}`}>
     <header className="site-header">
       <Brand />
       <nav aria-label="Main navigation">
@@ -18,5 +18,5 @@ export default function Layout({ route, children }) {
     </header>
     <main id="main-content">{children}</main>
     <footer className="site-footer"><Brand /><span>Find the spark. Follow your curiosity.</span><a href="/settings">Learning settings <Icon name="settings" size={15} /></a><small>© {new Date().getFullYear()} Pinlight</small></footer>
-  </>;
+  </div>;
 }

@@ -1,7 +1,9 @@
 import {z} from 'zod';
+import {deviceIds} from '../../shared/learning/devices.js';
 import {packages,boardIds} from '../../shared/learning/catalog.js';
 const componentIds=[...new Set(Object.values(packages).flatMap(p=>p.board.components.map(c=>c.id)))];
 export const sceneAction=z.discriminatedUnion('type',[
+ z.object({type:z.literal('device'),id:z.enum(deviceIds)}).strict(),
  z.object({type:z.literal('project'),id:z.enum(['camera-lab','rover-lab'])}).strict(),
  z.object({type:z.literal('capture')}).strict(),
  z.object({type:z.literal('drive'),direction:z.enum(['forward','backward','left','right','stop'])}).strict(),

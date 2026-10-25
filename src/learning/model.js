@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import {getPackage} from '../../shared/learning/catalog.js';
+import {piCameraSockets} from '../../shared/learning/connections.js';
 import { pins } from '../../shared/learning/raspberry-pi-5.js';
 
 export function createBoardModel(scene,boardId='raspberry-pi-5') {
@@ -47,7 +48,7 @@ export function createBoardModel(scene,boardId='raspberry-pi-5') {
  const socket=(g,x,z,w,title)=>{box(g,w,.36,.63,'#b9c2bd',x,.29,z,.85,.06);box(g,w*.79,.21,.025,'#202b2c',x,.27,z+.325);box(g,w*.62,.04,.03,'#b2a171',x,.24,z+.345,.7);label(pcb,title,x,.095,z-.5,w);};
  socket(group('power'),-3.15,2.57,.9,'USB-C');const hdmi=group('hdmi');socket(hdmi,-1.6,2.57,.75,'HDMI 0');socket(hdmi,-.25,2.57,.75,'HDMI 1');
  const ribbon=(g,x,z,w,title,rotate=false)=>{const sub=new THREE.Group();g.add(sub);sub.position.set(x,0,z);if(rotate)sub.rotation.y=Math.PI/2;box(sub,w,.19,.38,'#e0d4b3',0,.2,0);box(sub,w,.065,.12,'#302e29',0,.32,.12);for(let i=0;i<16;i++)box(sub,.025,.03,.13,'#cfb169',-w*.44+i*w*.058,.3,-.08,.7);label(pcb,title,x,.09,z-.35,w);};
- const mipi=group('mipi');ribbon(mipi,.8,1.7,.9,'CAM 0',true);ribbon(mipi,1.65,1.7,.9,'CAM 1',true);ribbon(group('pcie'),-3.55,-.4,1.1,'PCIe',true);
+ const mipi=group('mipi');ribbon(mipi,...[piCameraSockets.cam0.origin[0],piCameraSockets.cam0.origin[2]],.9,'CAM/DISP 0',true);ribbon(mipi,...[piCameraSockets.cam1.origin[0],piCameraSockets.cam1.origin[2]],.9,'CAM/DISP 1',true);ribbon(group('pcie'),-3.55,-.4,1.1,'PCIe',true);
  for(const [id,x,z,n] of [['fan',2,-1.5,4],['rtc',-2.3,1.5,2],['uart',-.25,1.55,3]]){const g=group(id);box(g,.18*n,.28,.38,'#eee9d8',x,.23,z);box(g,.13*n,.05,.25,'#4e5044',x,.39,z);for(let i=0;i<n;i++)box(g,.04,.12,.04,'#bdac72',x-(n-1)*.075+i*.15,.4,z,.7);label(pcb,id.toUpperCase(),x,.09,z-.35,.6);}
  const power=group('button');box(power,.28,.25,.43,'#c2c8ba',-4.17,.22,1.45,.7);box(power,.13,.14,.25,'#292b27',-4.35,.22,1.45);
  const sd=group('sd');box(sd,1.5,.18,1.35,'#a8b4ac',-3.55,-.21,0,.75);box(sd,1.5,.04,1.1,'#252c2b',-3.95,-.3,0);label(sd,'microSD',-3.5,-.32,0,1).rotation.x=Math.PI/2;

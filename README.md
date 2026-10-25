@@ -105,3 +105,11 @@ The Uno camera activity requires a buffered Arducam Mini 2MP Plus, rather than a
 ### Submission history
 
 Camera/rover work is an extension after the recorded demo and is not represented by the original submission video or screenshots. The last code commit before this extension was `2080e94`. For judging, use the submitted revision; changes committed after October 25, 2026 at 11:59 PM PDT are post-deadline additions, not part of the submitted build.
+
+## Chips, sensors and connection inspection
+
+The library has ten curated parts: TMP36, BMP280, SHT31, MPU-6050, HC-SR04-style ultrasonic module, VL53L0X, NE555, LM358, 74HC595 and MCP3008. Each has a selectable 3D body/interface, four learning steps, a source link and an interactive idealized reading. DIP chip pin numbers follow the specified top-view package; sensor breakout function pads remain illustrative because board variants differ. JavaScript examples demonstrate transfer relationships rather than claiming to be hardware drivers.
+
+Project cables resolve named board anchors. The Pi camera ribbon reaches CAM/DISP 0 and routes around the Ethernet housing. Uno camera SPI/I²C leads and rover driver/sensor leads use named pins matching the reference programs. A selectable Pi echo level-shifter is included. UI selection supports pointer picking and a keyboard-accessible component menu. Physical correctness still requires the exact module documentation and hardware testing; this is not manufacturer CAD.
+
+PDF tools now live in a compact My Desk section. The camera monitor keeps capture and download feedback alongside its preview. The header/footer follow normal document flow, with the workbench stacking on narrower viewports.

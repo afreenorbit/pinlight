@@ -1,6 +1,10 @@
+import {devices} from './devices.js';
 import {getPackage,findFocus} from './catalog.js';
 export function parseLessonCommand(raw,boardId='raspberry-pi-5'){
  const text=raw.toLowerCase().replace(/[^\p{L}\p{M}\p{N}\s]/gu,' ').replace(/\s+/g,' ').trim().replace(/^(please |can you |could you )/,'').replace(/ please$/,'');
+ if(/^(open|show|learn about|read about) (chips|sensors|chips and sensors)$/.test(text))return {type:'device',id:'tmp36'};
+ const requestedDevice=/^(?:open|show|learn about|read about) (?:the )?(.+)$/.exec(text)?.[1]?.replace(/[^a-z0-9]/g,'');
+ for(const device of devices)if([device.id,device.name].some(name=>name.toLowerCase().replace(/[^a-z0-9]/g,'')===requestedDevice))return {type:'device',id:device.id};
  if(/^(open |start |set up )?(the )?(camera lab|camera setup|camera project|camera)$/.test(text))return {type:'project',id:'camera-lab'};
  if(/^(open |start |set up )?(the )?(rover lab|rover|robot)$/.test(text))return {type:'project',id:'rover-lab'};
  if(/^(capture|capture frame|take a photo|take a picture)$/.test(text))return {type:'capture'};
