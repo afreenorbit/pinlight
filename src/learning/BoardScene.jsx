@@ -53,7 +53,7 @@ export default function BoardScene({boardId='raspberry-pi-5',focus='board',focus
 
   let transition=null;
   const aim=(target,distance=8,under=false)=>{transition={target:target.clone(),position:target.clone().add(new THREE.Vector3(distance*.45,under?-distance*.9:distance*.9,distance*.8))};};
-  const focusTo=id=>{const part=board.components.find(c=>c.id===id)||board.components[0];if(!experiment)aim(new THREE.Vector3(...part.position),id==='board'?11.5:id==='gpio'?8:5,id==='sd');};
+  const focusTo=id=>{const group=exp?.groups[id]||kit.groups[id];if(group&&id!=='board'){const box=new THREE.Box3().setFromObject(group);if(!box.isEmpty()){aim(box.getCenter(new THREE.Vector3()),Math.max(3.5,Math.min(9,box.getSize(new THREE.Vector3()).length()*1.5)),id==='sd');return;}}const part=board.components.find(c=>c.id===id)||board.components[0];if(!experiment)aim(new THREE.Vector3(...part.position),id==='board'?11.5:id==='gpio'?8:5,id==='sd');};
   engine.current={spotlight,view:p=>{const t=new THREE.Vector3(experiment?3:0,0,0);if(p==='zoom-in'||p==='zoom-out'){camera.position.sub(controls.target).multiplyScalar(p==='zoom-in'?.78:1.28).add(controls.target);return;}if(p==='top'){transition={target:t,position:t.clone().add(new THREE.Vector3(0,experiment?22:16,.01))};}else aim(t,experiment?16:11.5,p==='under');},focusTo};focusTo(focus);spotlight(spotRef.current);
   const cancel=()=>{transition=null;};controls.addEventListener('start',cancel);
   const resize=()=>{const w=root.clientWidth,h=root.clientHeight;if(!w||!h)return;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();};const observer=new ResizeObserver(resize);observer.observe(root);resize();

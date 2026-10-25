@@ -5,7 +5,7 @@ import ReferenceCode from '../components/ReferenceCode.jsx';
 import Icon from '../components/Icon.jsx';
 import DeviceActivity from './DeviceActivity.jsx';
 
-export default function DeviceLibrary({id,onSelect,step,onStep,done,onComplete,boardId,onBoardChange,viewCommand,action}){
+export default function DeviceLibrary({id,onSelect,step,onStep,done,onComplete,boardId,onBoardChange,viewCommand,action,questionFocus}){
  const workspace=useRef(null),search=useRef(null);
  const device=deviceById(id)||devices[0],steps=deviceSteps(device);
  const [query,setQuery]=useState(''),[filter,setFilter]=useState('All'),[browsing,setBrowsing]=useState(false);
@@ -48,7 +48,7 @@ export default function DeviceLibrary({id,onSelect,step,onStep,done,onComplete,b
     <div className="device-detail">
      <div className="part-heading"><div><div className="eyebrow">{device.category} <span> / </span> {device.interface}</div><h2>{device.name}</h2></div><span className="part-view-badge"><Icon name={activityOpen?'play':'chip'} size={14}/>{activityOpen?'Activity':'Explore'}</span></div>
      <p className="part-description">{activityOpen?'Connected to '+(boardId==='raspberry-pi-5'?'Raspberry Pi 5':'Arduino Uno R3')+'. Select a wire or component to inspect the connection.':device.summary}</p>
-     <ProjectHardwareScene kind="device" activity={activityOpen} pose={{value:safeValue}} boardId={boardId} device={device} viewCommand={viewCommand} selectedPart={part} onPartSelect={setPart}/>
+     <ProjectHardwareScene kind="device" activity={activityOpen} pose={{value:safeValue}} boardId={boardId} device={device} viewCommand={viewCommand} questionFocus={questionFocus} selectedPart={part} onPartSelect={setPart}/>
      <details className="part-pin-reference"><summary>Pin reference <span>{device.pins.length} pins</span><Icon name="down" size={14}/></summary><div className="device-pin-buttons" aria-label="Select a component part"><button aria-pressed={part==='body'} onClick={()=>setPart('body')}><Icon name="chip" size={16}/> Body</button>{device.pins.map((pin,i)=><button aria-pressed={part==='pin-'+(i+1)} onClick={()=>setPart('pin-'+(i+1))} key={i}><b>{device.category==='Chip'?i+1:'•'}</b>{pin}</button>)}</div><p className="project-note">{device.category==='Chip'?'DIP top view: find the notch before reading pin numbers.':'Breakout function pads are illustrative; check your module’s printed labels.'}</p></details>
      {activityOpen?(!stacked&&<div className="activity-reference-host" ref={setDetailsHost}/>):<>
       <section className="device-experiment"><div className="eyebrow">SEE HOW IT RESPONDS</div><div className="part-reading-control"><label>{device.experiment.label}<strong>{safeValue} {device.experiment.unit}</strong><input type="range" aria-label={device.experiment.label} min={device.experiment.min} max={device.experiment.max} step={device.experiment.step} value={safeValue} onChange={e=>setValue(+e.target.value)}/></label><output><strong>{reading.value}</strong><span>{reading.unit}</span></output></div>{device.id==='74hc595'&&<div className="register-bits">{reading.value.split('').map((bit,i)=><button key={i} aria-label={'Toggle output bit '+(7-i)} aria-pressed={bit==='1'} onClick={()=>setValue(safeValue^(1<<(7-i)))}>{bit}</button>)}</div>}<p>{reading.detail}</p><small>Ideal simulation · no hardware required</small></section>

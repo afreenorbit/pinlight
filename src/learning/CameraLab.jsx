@@ -3,7 +3,7 @@ import {cameraCode} from '../../shared/learning/projects.js';
 import Icon from '../components/Icon.jsx';
 import ProjectHardwareScene from './ProjectHardwareScene.jsx';
 import ReferenceCode from '../components/ReferenceCode.jsx';
-export default function CameraLab({boardId,action,viewCommand}){
+export default function CameraLab({boardId,action,viewCommand,questionFocus}){
  const pi=boardId==='raspberry-pi-5',canvas=useRef(null),video=useRef(null),stream=useRef(null),alive=useRef(false),generation=useRef(0),opening=useRef(false),captureUrl=useRef(null);
  const [brightness,setBrightness]=useState(0),[contrast,setContrast]=useState(0),[saturation,setSaturation]=useState(0),[resolution,setResolution]=useState('640x480'),[webcam,setWebcam]=useState(false),[error,setError]=useState(''),[capture,setCapture]=useState(null),[average,setAverage]=useState(0);
  const stop=()=>{generation.current++;stream.current?.getTracks().forEach(t=>t.stop());stream.current=null;if(video.current)video.current.srcObject=null;setWebcam(false);};
@@ -20,7 +20,7 @@ export default function CameraLab({boardId,action,viewCommand}){
  const captureFrame=()=>{const node=canvas.current;node.toBlob(blob=>{if(!blob||!alive.current)return;if(captureUrl.current)URL.revokeObjectURL(captureUrl.current);captureUrl.current=URL.createObjectURL(blob);setCapture({url:captureUrl.current,resolution,source:webcam?'Computer webcam':'Sample scene',bytes:blob.size});},'image/png');};
  useEffect(()=>{if(action?.type==='capture')captureFrame();},[action]);
  const code=cameraCode(boardId,{resolution,brightness,contrast,saturation});
- return <div className="camera-lab"><ProjectHardwareScene kind="camera" boardId={boardId} viewCommand={viewCommand}/><div className="camera-route"><strong>{pi?'Pi camera → ribbon → CAM/DISP 0':'Arducam Mini → SPI + I²C → Uno R3'}</strong><small>{pi?'Compatible Pi camera and Pi 5 cable required':'Buffered OV2640 Mini 2MP Plus required'}</small></div>
+ return <div className="camera-lab"><ProjectHardwareScene kind="camera" boardId={boardId} viewCommand={viewCommand} questionFocus={questionFocus}/><div className="camera-route"><strong>{pi?'Pi camera → ribbon → CAM/DISP 0':'Arducam Mini → SPI + I²C → Uno R3'}</strong><small>{pi?'Compatible Pi camera and Pi 5 cable required':'Buffered OV2640 Mini 2MP Plus required'}</small></div>
  <div className="camera-monitor"><div className="project-preview-heading"><span className={`live-pill ${webcam?'is-live':''}`}>{webcam?'COMPUTER WEBCAM · LOCAL':'ANIMATED SAMPLE · NO HARDWARE'}</span><small>{resolution} · average brightness {average}/255</small></div>
  <canvas ref={canvas} className="camera-preview" aria-label="Camera image properties preview"/><video ref={video} muted playsInline hidden/>
  <div className="project-actions"><button className="button button-dark" onClick={captureFrame}><Icon name="camera" size={17}/> Capture frame</button>{webcam?<button className="button button-light" onClick={stop}><Icon name="pause" size={17}/> Stop webcam</button>:<button className="button button-light" onClick={startWebcam}><Icon name="camera" size={17}/> Enable my computer webcam</button>}</div>{capture&&<a className="capture-notice" href={capture.url} download="pinlight-capture.png"><Icon name="check" size={16}/> Frame captured <Icon name="download" size={16}/> Download PNG</a>}</div><p className="project-note">The sample demonstrates image-processing effects. Optional webcam frames stay in this tab and are never sent to the tutor. A webcam is not a connection to your Pi or Uno.</p>

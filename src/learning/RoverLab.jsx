@@ -3,7 +3,7 @@ import {advanceRover,initialRover,obstacleDistance,roverCode,roverWorld} from '.
 import Icon from '../components/Icon.jsx';
 import ProjectHardwareScene from './ProjectHardwareScene.jsx';
 import ReferenceCode from '../components/ReferenceCode.jsx';
-export default function RoverLab({boardId,action,viewCommand}){
+export default function RoverLab({boardId,action,viewCommand,questionFocus}){
  const canvas=useRef(null),state=useRef(initialRover()),trail=useRef([]);
  const [running,setRunning]=useState(false),[speed,setSpeed]=useState(45),[left,setLeft]=useState(45),[right,setRight]=useState(45),[auto,setAuto]=useState(true),[threshold,setThreshold]=useState(70),[clear,setClear]=useState(false),[reading,setReading]=useState({distance:478,travel:0,blocked:false});
  const obstacles=[{x:650,y:clear?100:300,radius:55},{x:820,y:450,radius:45}];
@@ -26,7 +26,7 @@ export default function RoverLab({boardId,action,viewCommand}){
  };frame=requestAnimationFrame(draw);return()=>cancelAnimationFrame(frame);
  },[running,speed,left,right,auto,threshold,clear]);
  const keys=e=>{const commands={ArrowUp:[speed,speed],ArrowDown:[-speed,-speed],ArrowLeft:[-speed,speed],ArrowRight:[speed,-speed]};if(commands[e.key]){e.preventDefault();drive(...commands[e.key]);}if(e.code==='Space'){e.preventDefault();setRunning(false);}};
- return <div className="rover-lab"><ProjectHardwareScene kind="rover" boardId={boardId} pose={reading} viewCommand={viewCommand}/><div className="project-preview-heading"><span className={`live-pill ${running?'is-live':''}`}>{running?(reading.blocked?'OBSTACLE · STOPPED':'CANVAS ROVER · MOVING'):'CANVAS ROVER · PAUSED'}</span><small>Illustrative motion · no hardware connected</small></div>
+ return <div className="rover-lab"><ProjectHardwareScene kind="rover" boardId={boardId} pose={reading} viewCommand={viewCommand} questionFocus={questionFocus}/><div className="project-preview-heading"><span className={`live-pill ${running?'is-live':''}`}>{running?(reading.blocked?'OBSTACLE · STOPPED':'CANVAS ROVER · MOVING'):'CANVAS ROVER · PAUSED'}</span><small>Illustrative motion · no hardware connected</small></div>
  <canvas ref={canvas} width="1000" height="600" className="rover-canvas" tabIndex={0} onKeyDown={keys} aria-label="Rover driving canvas. Focus and use arrow keys to drive, space to stop."/>
  <div className="rover-readouts" aria-live="off"><div><strong>{reading.distance} cm</strong><small>Distance ahead</small></div><div><strong>{reading.travel} cm</strong><small>Travelled</small></div><div><strong>{auto?speed:left}% / {auto?speed:right}%</strong><small>Left / right command</small></div></div>
  <div className="project-actions"><button className="button button-dark" onClick={()=>setRunning(v=>!v)}><Icon name={running?'pause':'play'} size={17}/>{running?'Stop rover':'Run rover'}</button><button className="button button-light" onClick={reset}><Icon name="rotate" size={17}/> Reset position</button><button className="button button-light" onClick={()=>setClear(v=>!v)}><Icon name="target" size={17}/>{clear?'Put obstacle back':'Move obstacle aside'}</button></div>
