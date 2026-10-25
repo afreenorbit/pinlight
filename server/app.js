@@ -68,9 +68,8 @@ export function createApplication({ projectRoot = process.cwd(), databasePath = 
       }
       const url = new URL(request.url, 'http://localhost');
       if(url.pathname.startsWith('/api/learning/voice-model/')){
-        if(!voiceBridge.authenticate(request.headers.authorization))throw fail('Unauthorized voice provider.',401);
         if(url.pathname==='/api/learning/voice-model/models'&&request.method==='GET'){response.setHeader('Content-Type','application/json');return response.end(JSON.stringify({object:'list',data:[{id:VOICE_MODEL,object:'model',owned_by:'pinlight'}]}));}
-        if(url.pathname==='/api/learning/voice-model/chat/completions'&&request.method==='POST'){const input=await body(request);return sendVoiceCompletion(response,await voiceBridge.complete(input),input.stream!==false);}
+        if(url.pathname==='/api/learning/voice-model/chat/completions'&&request.method==='POST'){const input=await body(request);if(!voiceBridge.authenticatesTurn(input))throw fail('Unauthorized voice session.',401);return sendVoiceCompletion(response,await voiceBridge.complete(input),input.stream!==false);}
         throw fail('Not found.',404);
       }
       const identity=await auth.authenticate(request.headers.authorization);

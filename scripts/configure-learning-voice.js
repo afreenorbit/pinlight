@@ -9,7 +9,7 @@ try{
  if(configured&&!agent)throw Error('The configured learning agent was not found.');
  if(agent&&agent.agent_name!==LEARNING_AGENT_NAME)throw Error('Refusing to overwrite an unrelated voice agent.');
  // Register the authenticated desk endpoint only after the new API is deployed.
- const url=voiceModelUrl(),check=await fetch(`${url}/models`,{headers:{Authorization:`Bearer ${voiceBridgeKey()}`},signal:AbortSignal.timeout(20000)});
+ const url=voiceModelUrl(),check=await fetch(`${url}/models`,{signal:AbortSignal.timeout(20000)});
  if(!check.ok||(await check.json()).data?.[0]?.id!==VOICE_MODEL)throw Error('Deploy the new voice bridge API before configuring the agent.');
  const models=await api('/user/model/custom');
  const registered=(Array.isArray(models)?models:models.data||models.models||[]).some(m=>(m.custom_model_name||m.model||m.name)===VOICE_MODEL&&(m.custom_model_url||m.base_url||m.url)===url);

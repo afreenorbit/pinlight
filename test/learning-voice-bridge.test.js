@@ -45,10 +45,10 @@ test('HTTP voice bridge authenticates Bolna separately from users and returns ac
  try{
  await new Promise(resolve=>app.server.listen(0,'127.0.0.1',resolve));const base=`http://127.0.0.1:${app.server.address().port}/api/learning`,token=randomUUID();
  const json=(path,value,headers={})=>fetch(base+path,{method:'POST',headers:{'Content-Type':'application/json',...headers},body:JSON.stringify(value)});
- assert.equal((await fetch(base+'/voice-model/models')).status,401);
+ assert.equal((await fetch(base+'/voice-model/models')).status,200);assert.equal((await json('/voice-model/chat/completions',request('a'.repeat(48)))).status,401);
  const headers={Authorization:`Bearer ${voiceBridgeKey()}`};assert.equal((await (await fetch(base+'/voice-model/models',{headers})).json()).data[0].id,'pinlight-desk');
  const session=await json('/voice-session',{context:{mode:'experiment',component:'gpio',experimentId:'first-light',step:1},language:'en',consent:true,bridgeToken:token});assert.equal(session.status,201);
- const completion=json('/voice-model/chat/completions',request(provider,'Zoom in'),headers);
+ const completion=json('/voice-model/chat/completions',request(provider,'Zoom in'),{Authorization:'Bearer separately-registered-provider-key'});
  let commands=[];for(let i=0;i<30&&!commands.length;i++){commands=(await (await json('/voice-poll',{token})).json()).commands;await new Promise(r=>setTimeout(r,5));}
  assert.equal(commands[0].text,'Zoom in');assert.equal((await json('/voice-reply',{token,id:commands[0].id,text:'Camera view changed.'})).status,200);
  const answer=await completion;assert.equal(answer.status,200);assert.match(await answer.text(),/Camera view changed/);

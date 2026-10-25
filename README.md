@@ -90,7 +90,7 @@ Board names belong to their owners. Pinlight is not affiliated with Raspberry Pi
 
 ### Unified speech rollout
 
-Deploy the API and frontend, then run `npm run configure:learning-voice`. The script checks the live bridge, registers its authenticated custom model endpoint with Bolna, and updates only the dedicated learning agent. It preserves the archived Tracepoint agent. `BOLNA_BRIDGE_URL` can override the default public API endpoint; its server-only bearer key is derived from `BOLNA_API_KEY`, so rotating that key requires re-registering the custom model.
+Deploy the API and frontend, then run `npm run configure:learning-voice`. The script checks the live bridge, registers its authenticated custom model endpoint with Bolna, and updates only the dedicated learning agent. It preserves the archived Tracepoint agent. `BOLNA_BRIDGE_URL` can override the default public API endpoint; each provider turn authenticates with a private, expiring capability issued for that call. The model-list endpoint is public metadata; it does not expose a session or execute commands.
 
 Press **Speak** in chat and consent once. Dictate with Wispr or type; replies are read through a short, microphone-muted Bolna call. **Stop dictation** switches to a continuous microphone call; say **stop listening** to finish. Text dictation and continuous listening share the same chat, lesson navigation and scene commands. A playback call closes after detected speech ends, with a maximum duration as a backstop. These calls use Bolna credits; there is no browser speech-synthesis fallback.
 

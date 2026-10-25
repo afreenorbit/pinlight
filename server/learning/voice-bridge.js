@@ -13,6 +13,7 @@ export function createVoiceBridge({key=voiceBridgeKey(),now=Date.now,timeoutMs=3
  const get=token=>{cleanup();const s=sessions.get(token);if(!s)throw fail('Voice session expired. Press Speak again.',404);return s;};
  return {
   authenticate(header){const supplied=header?.replace(/^Bearer /,'')||'';return !!key&&supplied.length===key.length&&timingSafeEqual(Buffer.from(supplied),Buffer.from(key));},
+  authenticatesTurn(raw){const system=Array.isArray(raw?.messages)?raw.messages.filter(m=>m.role==='system'&&typeof m.content==='string').map(m=>m.content).join('\n'):'';const token=/PINLIGHT_BRIDGE=([a-f0-9]{48})/.exec(system)?.[1];cleanup();return !!token&&[...sessions.values()].some(s=>s.providerToken===token);},
   open(browserToken){z.string().uuid().parse(browserToken);cleanup();if(sessions.size>=100)throw fail('Voice service is busy.',429);const providerToken=randomBytes(24).toString('hex');sessions.set(browserToken,{providerToken,expires:now()+240000,jobs:new Map(),turns:new Map()});return providerToken;},
   close(token){const s=get(token);for(const job of s.jobs.values())job.finish('Voice stopped.');sessions.delete(token);return {closed:true};},
   poll(token){const s=get(token);return {commands:[...s.jobs.values()].filter(j=>!j.done).map(({id,text})=>({id,text}))};},
