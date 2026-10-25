@@ -16,9 +16,11 @@ try{
  if(!registered)await api('/user/model/custom',{method:'POST',body:JSON.stringify({custom_model_name:VOICE_MODEL,custom_model_url:url,custom_model_key:voiceBridgeKey(),custom_model_family:'openai'})});
  let id=agent?.id;
  if(!id){const created=await api('/v2/agent',{method:'POST',body:JSON.stringify(buildLearningAgentConfig())});id=created.agent_id;if(!/^[a-f0-9-]{36}$/i.test(id||''))throw Error('Bolna returned an invalid agent ID.');}
- if(agent)await api(`/v2/agent/${id}`,{method:'PATCH',body:JSON.stringify(buildLearningAgentConfig())});
+ if(agent)await api(`/v2/agent/${id}`,{method:'PUT',body:JSON.stringify(buildLearningAgentConfig())});
  const env=await readFile('.env','utf8');
  await writeFile('.env',/^BOLNA_LEARNING_AGENT_ID=/m.test(env)?env.replace(/^BOLNA_LEARNING_AGENT_ID=.*$/m,`BOLNA_LEARNING_AGENT_ID=${id}`):`${env.trimEnd()}\nBOLNA_LEARNING_AGENT_ID=${id}\n`);
  const details=await api(`/v2/agent/${id}`);
- console.log(JSON.stringify({configured:details.agent_name===LEARNING_AGENT_NAME,name:details.agent_name,reused:!!agent,audioStarted:false,existingInspectionAgentUnchanged:true}));
+ const llm=details.tasks?.[0]?.tools_config?.llm_agent?.llm_config;
+ if(llm?.provider!=='custom'||llm.model!==VOICE_MODEL||llm.base_url!==url)throw Error('Bolna did not apply the desk bridge model.');
+ console.log(JSON.stringify({model:llm.model,configured:details.agent_name===LEARNING_AGENT_NAME,name:details.agent_name,reused:!!agent,audioStarted:false,existingInspectionAgentUnchanged:true}));
 }catch(e){console.error(e.name==='BolnaError'?e.message:'Learning agent setup failed. Deploy the voice bridge API first; no credentials were printed.');process.exitCode=1;}
