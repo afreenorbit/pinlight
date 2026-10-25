@@ -1,0 +1,2 @@
+# Use a dedicated Python 3.11/3.12 environment. Models download on first use.
+docling>=2.81,<3

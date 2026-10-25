@@ -4,6 +4,7 @@ node_modules/
 dist/
 *.log
 archive/
+legacy/
 .env.*
 !.env.example
 

@@ -1,3 +1,4 @@
+import Icon from './Icon.jsx';
 import { useEffect, useRef, useState } from 'react';
 
 export default function SpokenResponse({ text, autoRead, blocked }) {
@@ -20,5 +21,5 @@ export default function SpokenResponse({ text, autoRead, blocked }) {
     if(autoRead&&!blocked)speak();
     return()=>{if(utterance.current){utterance.current.onstart=null;utterance.current.onend=null;utterance.current.onerror=null;}window.speechSynthesis?.cancel();};
   },[text,autoRead,blocked]);
-  return <div className="assistant-response" role="status"><div className="eyebrow">ASSISTANT RESPONSE {state==='speaking'?'· SPEAKING':''}</div><strong className="spoken-caption">{text}</strong>{available&&<div className="response-audio-actions"><button className="text-link" disabled={blocked} onClick={speak}>Hear response ↗</button>{state==='speaking'&&<button className="text-link" onClick={()=>{speechSynthesis.cancel();setState('idle');}}>Stop reading</button>}</div>}{state==='unavailable'&&<p className="dictation-hint">Speech playback is unavailable in this browser. The full response is shown above.</p>}</div>;
+  return <div className="assistant-response" role="status"><div className="eyebrow">ASSISTANT RESPONSE {state==='speaking'?'· SPEAKING':''}</div><strong className="spoken-caption">{text}</strong>{available&&<div className="response-audio-actions"><button className="text-link" disabled={blocked} onClick={speak}><>{"Hear response "}<Icon name="diagonal" size={16}/></></button>{state==='speaking'&&<button className="text-link" onClick={()=>{speechSynthesis.cancel();setState('idle');}}>Stop reading</button>}</div>}{state==='unavailable'&&<p className="dictation-hint">Speech playback is unavailable in this browser. The full response is shown above.</p>}</div>;
 }

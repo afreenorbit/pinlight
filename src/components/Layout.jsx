@@ -17,6 +17,6 @@ export default function Layout({ route, children }) {
       {!accountsEnabled ? <a className="header-action" href="/learn">Start learning <Icon name="diagonal" size={16} /></a> : user ? <a className="header-action" href="/signin" title={user.email}><span className="avatar-dot">{user.email[0].toUpperCase()}</span> Account</a> : <a className="header-action" href="/signin">Sign in <Icon name="diagonal" size={16} /></a>}
     </header>
     <main id="main-content">{children}</main>
-    <footer className="site-footer"><Brand /><span>Find the spark. Follow your curiosity.</span><a href="/settings">Workspace settings <Icon name="settings" size={15} /></a><small>© {new Date().getFullYear()} Pinlight</small></footer>
+    <footer className="site-footer"><Brand /><span>Find the spark. Follow your curiosity.</span><a href="/settings">Learning settings <Icon name="settings" size={15} /></a><small>© {new Date().getFullYear()} Pinlight</small></footer>
   </>;
 }

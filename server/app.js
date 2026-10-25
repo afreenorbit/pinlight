@@ -4,14 +4,15 @@ import { resolve } from 'node:path';
 import { z } from 'zod';
 import { createStore } from './services/store.js';
 import { documentService } from './services/documents.js';
-import { inspectionService } from './services/inspections.js';
-import { commandService } from './services/commands.js';
-import { reportService } from './services/reports.js';
-import { mastra } from './mastra/index.js';
-import {identifyDocument,getPackage} from '../shared/learning/catalog.js';
+import {identifyDocument} from '../shared/learning/catalog.js';
 import {createTutorService} from './learning/tutor.js';
+import {buildJourney} from './learning/journey.js';
+import {createProcessingService} from './learning/processing.js';
+import {createDeviceExtractor} from './learning/extractor.js';
+import {extractLayout} from './learning/layout.js';
 import {createLearningVoiceService} from './learning/voice.js';
-import { bolnaService } from './bolna/service.js';
+import {createAuth0Verifier} from './services/auth0.js';
+import {createReferenceService} from './learning/references.js';
 import { board,experiments,sources } from '../shared/learning/raspberry-pi-5.js';
 
 const fail = (message, status) => Object.assign(new Error(message), { status });
@@ -38,11 +39,12 @@ async function body(request, binary = false) {
   if (binary) return bytes;
   try { return JSON.parse(bytes.toString('utf8')); } catch { throw fail('Invalid JSON body.', 400); }
 }
-export function createApplication({ projectRoot = process.cwd(), databasePath = process.env.DATABASE_PATH || './data/tracepoint.sqlite', documentsDir = process.env.DOCUMENTS_DIR || './data/documents', reportsDir = process.env.REPORTS_DIR || './data/reports', engine = mastra, bolnaOptions, learningOptions, learningVoiceOptions } = {}) {
+export function createApplication({ projectRoot = process.cwd(), databasePath = process.env.DATABASE_PATH || './data/pinlight.sqlite', documentsDir = process.env.DOCUMENTS_DIR || './data/documents', learningOptions, learningVoiceOptions, processingOptions, extensionFactory,authOptions,referenceOptions } = {}) {
   const store = createStore(databasePath), documents = documentService(store, documentsDir);
-  const inspections = inspectionService(store, engine), commands = commandService(store, engine, inspections);
-  const reports = reportService(store, documents, resolve(reportsDir));
-  const bolna = bolnaService(store, bolnaOptions); const tutor=createTutorService({store,...learningOptions}), learningVoice=createLearningVoiceService({store,...learningVoiceOptions});
+  const extractor=createDeviceExtractor(),processing=createProcessingService({store,documents,cacheKey:`${extractor.status().model}:${process.env.DOCLING_ENABLED||'off'}`,extract:args=>extractor.extract(args),layout:doc=>extractLayout({file:resolve(documentsDir,`${doc.id}.pdf`)}),...processingOptions});
+  const extension=extensionFactory?.({store,documents});
+  const auth=createAuth0Verifier(authOptions),references=createReferenceService({store,...referenceOptions});
+  const tutor=createTutorService({store,...learningOptions}),learningVoice=createLearningVoiceService({store,...learningVoiceOptions});
   const allowedHosts = new Set(['localhost', '127.0.0.1', '[::1]', ...listEnv('PUBLIC_HOSTS')]);
   const allowedOrigins = new Set(['http://localhost:5173', 'http://127.0.0.1:5173', ...listEnv('ALLOWED_ORIGINS')]);
   const limited = process.env.RATE_LIMIT === 'on' ? createLimiter() : () => false;
@@ -53,7 +55,7 @@ export function createApplication({ projectRoot = process.cwd(), databasePath = 
       if (trusted) { response.setHeader('Access-Control-Allow-Origin', origin); response.setHeader('Vary', 'Origin'); }
       if (request.method === 'OPTIONS') {
         if (!trusted) throw fail('Origin not allowed.', 403);
-        response.writeHead(204, { 'Access-Control-Allow-Methods': 'GET, POST, PATCH, PUT, DELETE', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '600' });
+        response.writeHead(204, { 'Access-Control-Allow-Methods': 'GET, POST, PATCH, PUT, DELETE', 'Access-Control-Allow-Headers': 'Content-Type, Authorization', 'Access-Control-Max-Age': '600' });
         return response.end();
       }
       const host = new URL(`http://${request.headers.host}`).hostname;
@@ -63,24 +65,49 @@ export function createApplication({ projectRoot = process.cwd(), databasePath = 
         if ((origin && !trusted && origin !== `http://${request.headers.host}`) || (request.headers['sec-fetch-site'] === 'cross-site' && !trusted)) throw fail('Cross-site writes are not allowed.', 403);
       }
       const url = new URL(request.url, 'http://localhost');
+      const identity=await auth.authenticate(request.headers.authorization);
+      const canReadDocument=documentId=>{const access=store.get('document-access',documentId);return !access||access.public||!!identity&&access.owners.includes(identity.ownerKey);};
+      const requireDocument=documentId=>{if(!canReadDocument(documentId))throw fail('Document not found.',404);};
       const parts = url.pathname.split('/').filter(Boolean), [, kind, id, action] = parts, method = request.method;
-      const bucket = method !== 'POST' ? null : kind === 'learning' && id === 'ask' ? 'ask' : (kind === 'learning' && id === 'voice-session') || (kind === 'bolna' && id === 'session') ? 'voice' : kind === 'documents' && (!id || id === 'import-local') ? 'upload' : kind === 'commands' ? 'command' : null;
+      const bucket = method !== 'POST' ? null : kind === 'learning' && ['ask','journey','process','references'].includes(id) ? 'ask' : kind === 'learning' && id === 'voice-session' ? 'voice' : kind === 'documents' && (!id || id === 'import-local') ? 'upload' : kind === 'commands' ? 'command' : null;
       if (bucket && limited(request, bucket)) throw fail('Too many requests right now. Try again in a few minutes.', 429);
       const send = (value, status = 200) => { response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' }); response.end(JSON.stringify(value)); };
-      if (url.pathname === '/api/health' && method === 'GET') return send({ name: 'tracepoint', stage: 'local-mvp', documents: store.list('document').length });
-      if (url.pathname === '/api/engine' && method === 'GET') return send({ framework: 'Mastra', workflows: Object.keys(engine.listWorkflows()), agents: Object.keys(engine.listAgents()), providerCallsEnabled: Boolean(engine.listAgents().inspectionAgent), model: process.env.GROQ_MODEL || null, documentRetrievalConnected: true, persistenceConnected: true, voice: { wispr: 'external-dictation', bolna: bolna.status() } });
+      if (url.pathname === '/api/health' && method === 'GET') return send({ name: 'pinlight', stage: 'pdf-learning-pipeline', documents: store.list('document').length });
       if (parts[0] !== 'api') throw fail('Not found.', 404);
-      if(kind==='learning'&&id==='documents'&&method==='GET')return send(store.list('document').map(d=>({id:d.id,title:d.title,revision:d.revision,...identifyDocument(d)})));
-      if(kind==='learning'&&id==='resolve'&&method==='POST'){const input=z.object({documentId:z.string().uuid()}).strict().parse(await body(request));const doc=store.get('document',input.documentId);if(!doc)throw fail('Document not found.',404);return send({documentId:doc.id,title:doc.title,revision:doc.revision,...identifyDocument(doc)});}
-      if(kind==='learning'&&id==='status'&&method==='GET')return send({tutor:tutor.status(),voice:learningVoice.status()});
-      if(kind==='learning'&&id==='ask'&&method==='POST')return send(await tutor.ask(await body(request)));
-      if(kind==='learning'&&id==='voice-session'&&method==='POST')return send(await learningVoice.mint(await body(request)),201);
+      if(kind==='auth'&&id==='me'&&method==='GET'){if(!identity)throw fail('Sign in to continue.',401);return send(identity);}
+      if(kind==='learning'&&id==='references'&&method==='POST')return send(await references.search(await body(request)));
+      if(kind==='learning'&&id==='documents'&&method==='GET')return send(store.list('document').filter(d=>canReadDocument(d.id)).map(d=>({id:d.id,title:d.title,revision:d.revision,...identifyDocument(d)})));
+      if(kind==='learning'&&id==='resolve'&&method==='POST'){const input=z.object({documentId:z.string().uuid()}).strict().parse(await body(request));requireDocument(input.documentId);const doc=store.get('document',input.documentId);if(!doc)throw fail('Document not found.',404);return send({documentId:doc.id,title:doc.title,revision:doc.revision,...identifyDocument(doc)});}
+      if(kind==='learning'&&id==='journey'&&method==='POST'){
+        const input=z.object({documentId:z.string().uuid()}).strict().parse(await body(request));
+        requireDocument(input.documentId);
+        let doc=store.get('document',input.documentId);if(!doc)throw fail('Document not found.',404);
+        if(doc.pages.some(p=>!p.items.length)&&!doc.ocr)doc=await documents.readImages(doc.id);
+        return send(buildJourney(doc));
+      }
+      if(kind==='learning'&&id==='process'&&method==='POST'){
+        const input=z.object({documentId:idSchema,retry:z.boolean().optional()}).strict().parse(await body(request));
+        requireDocument(input.documentId);
+        return send(processing.start(input.documentId,{retry:input.retry}),202);
+      }
+      if(kind==='learning'&&id==='jobs'&&action&&method==='GET'){idSchema.parse(action);const job=processing.get(action);requireDocument(job.documentId);return send(job);}
+      if(kind==='learning'&&id==='status'&&method==='GET')return send({tutor:tutor.status(),voice:learningVoice.status(),extraction:extractor.status(),processing:processing.status(),auth:auth.status(),references:references.status()});
+      if(kind==='learning'&&id==='ask'&&method==='POST'){const input=await body(request);if(input.context?.documentId)requireDocument(input.context.documentId);return send(await tutor.ask(input));}
+      if(kind==='learning'&&id==='voice-session'&&method==='POST'){const input=await body(request);if(input.context?.documentId)requireDocument(input.context.documentId);return send(await learningVoice.mint(input),201);}
       if (kind === 'learning' && id === 'catalog' && method === 'GET') return send({board,experiments,sources,stage:'detailed-learning-desk',continuousVoice:learningVoice.status().configured,liveSceneTools:false,automatic3d:false});
-      if (kind === 'documents' && method === 'GET' && !id) return send(store.list('document').map(({ pages, references, ...d }) => ({ ...d, pageCount: pages.length, referenceCount: references.length, textCount: pages.reduce((n, p) => n + p.items.length, 0) })));
-      if (kind === 'documents' && method === 'POST' && id === 'import-local') return send({ results: await documents.importLocal(projectRoot) });
-      if (kind === 'documents' && method === 'POST' && !id) return send(await documents.import(await body(request, true), url.searchParams.get('name') || 'drawing.pdf'), 201);
+      if (kind === 'documents' && method === 'GET' && !id) return send(store.list('document').filter(d=>canReadDocument(d.id)).map(({ pages, references, ...d }) => ({ ...d, pageCount: pages.length, referenceCount: references.length, textCount: pages.reduce((n, p) => n + p.items.length, 0) })));
+      if (kind === 'documents' && method === 'POST' && id === 'import-local'){if(auth.status().configured&&!identity)throw fail('Sign in to import server files.',401);return send({ results: await documents.importLocal(projectRoot) });}
+      if (kind === 'documents' && method === 'POST' && !id){
+        const result=await documents.import(await body(request,true),url.searchParams.get('name')||'datasheet.pdf'),existing=store.get('document-access',result.document.id);
+        if(!result.duplicate)store.put('document-access',{id:result.document.id,public:!identity,owners:identity?[identity.ownerKey]:[]});
+        else if(existing&&!existing.public&&identity&&!existing.owners.includes(identity.ownerKey))store.put('document-access',{...existing,owners:[...existing.owners,identity.ownerKey]});
+        // Knowing an ID or a hash is not enough: dedup access is granted only after
+        // the caller supplies the complete, byte-identical PDF.
+        else if(existing&&!existing.public&&!identity)throw fail('Sign in to save this document.',401);
+        return send(result,201);
+      }
       if (kind === 'documents' && id) {
-        idSchema.parse(id); const document = store.get('document', id);
+        idSchema.parse(id);requireDocument(id);const document = store.get('document', id);
         if (!document) throw fail('Document not found.', 404);
         if (method === 'GET' && !action) return send(document);
         if (method === 'POST' && action === 'read-images') return send(await documents.readImages(id));
@@ -93,30 +120,7 @@ export function createApplication({ projectRoot = process.cwd(), databasePath = 
           store.put('document', { ...latest, references: [...latest.references, reference] }); return send(reference, 201);
         }
       }
-      if (kind === 'drafts' && method === 'POST' && !id) return send(await inspections.draft(await body(request)), 201);
-      if (kind === 'drafts' && method === 'GET' && !id) return send(store.list('draft').filter(d => d.status === 'awaiting_review' && (!url.searchParams.get('documentId') || d.documentId === url.searchParams.get('documentId'))));
-      if (kind === 'drafts' && method === 'POST' && action === 'dismiss') { idSchema.parse(id); return send(inspections.dismiss(id)); }
-      if (kind === 'drafts' && method === 'POST' && action === 'confirm') { idSchema.parse(id); return send(inspections.confirm(id, await body(request)), 201); }
-      if (kind === 'inspections' && method === 'GET' && !id) return send(store.list('finding').filter(f => !url.searchParams.get('documentId') || f.documentId === url.searchParams.get('documentId')));
-      if (kind === 'inspections' && method === 'PATCH' && id) { idSchema.parse(id); const { status } = z.object({ status: z.string() }).strict().parse(await body(request)); return send(inspections.status(id, status)); }
-      if (kind === 'commands' && method === 'POST' && !id) {
-        const input=await body(request);
-        idSchema.parse(input.documentId);
-        const doc=store.get('document',input.documentId);
-        if(doc?.pages.some(p=>!p.items.length)&&!doc.ocr)await documents.readImages(doc.id);
-        return send(await commands(input));
-      }
-      if (kind === 'reports' && method === 'GET' && !id) return send(store.list('report'));
-      if (kind === 'reports' && method === 'POST' && !id) { const input = z.object({ documentId: idSchema }).strict().parse(await body(request)); return send(await reports.create(input.documentId), 201); }
-      if (kind === 'reports' && method === 'GET' && id && ['pdf', 'json'].includes(action)) { idSchema.parse(id); const file = await reports.file(id, action); response.writeHead(200, { 'Content-Type': action === 'pdf' ? 'application/pdf' : 'application/json', 'Content-Disposition': `attachment; filename="tracepoint-${id}.${action}"` }); return response.end(file); }
-      if (kind === 'bolna' && id === 'status' && method === 'GET') return send(bolna.status());
-      if (kind === 'bolna' && id === 'session' && method === 'POST') return send(await bolna.mint(await body(request)), 201);
-      if (kind === 'bolna' && id === 'sessions' && method === 'GET') return send(bolna.list(url.searchParams.get('documentId')));
-      if (kind === 'bolna' && id === 'executions' && action) {
-        idSchema.parse(action);
-        if (method === 'POST' && parts[4] === 'draft') return send(await bolna.draft(action, inspections),201);
-        if (method === 'POST' && !parts[4]) return send(await bolna.sync(action));
-      }
+      if(extension?.handle&&await extension.handle({kind,id,action,method,url,parts,request,body,idSchema,z,send:(value,status=200,format)=>{if(format){response.writeHead(status,{'Content-Type':format==='pdf'?'application/pdf':'application/json','Content-Disposition':`attachment; filename="inspection-${id}.${format}"`});response.end(value);}else send(value,status);}}))return;
       throw fail('Not found.', 404);
     } catch (error) {
       const status = error instanceof z.ZodError ? 400 : (error.status || 500);
@@ -126,7 +130,7 @@ export function createApplication({ projectRoot = process.cwd(), databasePath = 
       if (status === 500) console.error('API operation failed:', error.name, error.message);
     }
   });
-  return { server, store, documents, inspections, reports, bolna };
+  return { server, store, documents, processing, ...extension?.services };
 }
 
 

@@ -1,14 +1,29 @@
-const paths = {
-  arrow: <path d="M5 12h14m-6-6 6 6-6 6" />,
-  diagonal: <path d="M6 18 18 6M6 6h12v12" />,
-  file: <><path d="M14 3H5v18h14V8zM14 3v5h5M8 12h8M8 16h5" /></>,
-  mic: <><rect x="9" y="3" width="6" height="12" rx="3" /><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8" /></>,
-  check: <path d="m5 12 4 4L19 6" />,
-  layers: <><path d="m12 3 10 6-10 6L2 9zM2 13l10 6 10-6M2 17l10 6 10-6" /></>,
-  target: <><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="3" /><path d="M12 1v4m0 14v4M1 12h4m14 0h4" /></>,
-  plus: <path d="M12 5v14M5 12h14" />,
-  settings: <><path d="M4 7h16M4 17h16" /><circle cx="9" cy="7" r="3" /><circle cx="15" cy="17" r="3" /></>,
-};
-export default function Icon({ name = 'arrow', size = 20, ...props }) {
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>{paths[name] || paths.arrow}</svg>;
+import {HugeiconsIcon} from '@hugeicons/react';
+// Subpath imports keep the complete free icon catalogue out of the dependency scan.
+import ArrowRight from '@hugeicons/core-free-icons/ArrowRight02Icon';
+import ArrowLeft from '@hugeicons/core-free-icons/ArrowLeft02Icon';
+import ArrowUpRight from '@hugeicons/core-free-icons/ArrowUpRight01Icon';
+import ArrowDown from '@hugeicons/core-free-icons/ArrowDown02Icon';
+import File from '@hugeicons/core-free-icons/File01Icon';
+import Mic from '@hugeicons/core-free-icons/Mic01Icon';
+import Check from '@hugeicons/core-free-icons/Tick02Icon';
+import Layers from '@hugeicons/core-free-icons/Layers01Icon';
+import Target from '@hugeicons/core-free-icons/Target01Icon';
+import Plus from '@hugeicons/core-free-icons/Add01Icon';
+import Settings from '@hugeicons/core-free-icons/Settings01Icon';
+import Close from '@hugeicons/core-free-icons/Cancel01Icon';
+import Play from '@hugeicons/core-free-icons/PlayIcon';
+import Pause from '@hugeicons/core-free-icons/PauseIcon';
+import Code from '@hugeicons/core-free-icons/CodeIcon';
+import Bulb from '@hugeicons/core-free-icons/BulbIcon';
+import Button from '@hugeicons/core-free-icons/RadioButtonIcon';
+import Colour from '@hugeicons/core-free-icons/ColorsIcon';
+import Music from '@hugeicons/core-free-icons/MusicNote03Icon';
+import Rotate from '@hugeicons/core-free-icons/RotateRight01Icon';
+import Upload from '@hugeicons/core-free-icons/Upload04Icon';
+import Search from '@hugeicons/core-free-icons/Search01Icon';
+
+const icons={arrow:ArrowRight,left:ArrowLeft,diagonal:ArrowUpRight,down:ArrowDown,file:File,mic:Mic,check:Check,layers:Layers,target:Target,plus:Plus,settings:Settings,close:Close,play:Play,pause:Pause,code:Code,led:Bulb,button:Button,rgb:Colour,buzzer:Music,servo:Rotate,upload:Upload,search:Search};
+export default function Icon({name='arrow',size=20,className='',...props}){
+ return <HugeiconsIcon icon={icons[name]||ArrowRight} size={size} color="currentColor" strokeWidth={1.6} aria-hidden="true" focusable="false" className={`ui-icon ${className}`.trim()} {...props}/>;
 }

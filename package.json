@@ -1,5 +1,5 @@
 {
-  "name": "tracepoint",
+  "name": "pinlight",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -11,23 +11,27 @@
     "start": "node --env-file=.env server/index.js",
     "test": "node --test test/*.test.js",
     "import:documents": "node --env-file=.env scripts/import-documents.js",
-    "test:live": "node --env-file=.env scripts/test-groq.js",
-    "configure:bolna": "node --env-file=.env scripts/configure-bolna.js",
-    "test:bolna": "node --env-file=.env scripts/test-bolna.js",
+    "test:live": "node --env-file=.env scripts/test-device-extraction.js",
     "configure:learning-voice": "node --env-file=.env scripts/configure-learning-voice.js",
-    "test:learning-live": "node --env-file=.env scripts/test-learning-live.js"
+    "test:learning-live": "node --env-file=.env scripts/test-learning-live.js",
+    "migrate:learning": "node --env-file=.env scripts/migrate-learning-storage.js"
   },
   "engines": {
     "node": ">=24"
   },
   "dependencies": {
+    "@auth0/auth0-spa-js": "^2.29.0",
     "@bolna/web-call": "^3.0.1",
+    "@hugeicons/core-free-icons": "^4.3.5",
+    "@hugeicons/react": "^1.1.10",
     "@mastra/core": "^1.79.0",
     "@napi-rs/canvas": "^1.0.13",
     "@supabase/supabase-js": "^2.118.0",
     "@tesseract.js-data/eng": "^1.0.0",
+    "jose": "^6.2.13",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.4.299",
+    "pg": "^8.23.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "tesseract.js": "^7.0.0",

@@ -12,7 +12,7 @@ export async function readImagePages(bytes, pages) {
     worker=await createWorker('eng',1,{langPath:english.langPath,gzip:true,cacheMethod:'none'});
     await worker.setParameters({tessedit_pageseg_mode:'11'});
     const results=[];
-    for(const info of pages.filter(p=>!p.items.length).slice(0,10)) {
+    for(const info of pages.filter(p=>!p.items.length).slice(0,100)) {
       const page=await pdf.getPage(info.page), base=page.getViewport({scale:1});
       const viewport=page.getViewport({scale:Math.min(4,3600/Math.max(base.width,base.height))});
       const canvas=createCanvas(Math.ceil(viewport.width),Math.ceil(viewport.height));

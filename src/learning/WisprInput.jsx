@@ -1,3 +1,4 @@
+import Icon from '../components/Icon.jsx';
 import {useEffect,useRef,useState} from 'react';
 
 // Wispr Flow has no web API: it inserts finished, formatted text into whichever field has focus.
@@ -24,7 +25,7 @@ export default function WisprInput({id,value,onChange,onSend,disabled,busy,place
  };
  const onKeyDown=e=>{if(e.key==='Escape'&&pending){e.preventDefault();cancel();return;}if(e.key==='Enter'){e.preventDefault();send(value);return;}if(!['Control','Meta','Shift','Alt'].includes(e.key))cancel();};
  return <div className={`wispr-input ${pending?'is-pending':''}`}>
-  <div className="wispr-field"><input id={id} ref={input} value={value} onInput={onInput} onChange={()=>{}} onKeyDown={onKeyDown} placeholder={placeholder} disabled={disabled} maxLength={1000} autoComplete="off"/><button type="button" className="button button-dark" disabled={!value.trim()||busy||disabled} onClick={()=>send(value)}>{busy?'…':'Send ↗'}</button></div>
+  <div className="wispr-field"><input id={id} ref={input} value={value} onInput={onInput} onChange={()=>{}} onKeyDown={onKeyDown} placeholder={placeholder} disabled={disabled} maxLength={1000} autoComplete="off"/><button type="button" className="button button-dark" disabled={!value.trim()||busy||disabled} onClick={()=>send(value)}>{busy?'…':<>{"Send "}<Icon name="diagonal" size={16}/></>}</button></div>
   <div className="wispr-bar"><label><input type="checkbox" checked={auto} onChange={e=>{setAuto(e.target.checked);cancel();}}/> Auto-send dictation</label><span role="status">{pending?<>Sending… <button type="button" onClick={cancel}>Esc to cancel</button></>:auto?<>Hold <kbd>Ctrl</kbd>+<kbd>Win</kbd>, speak, release. It sends itself.</>:<>Dictate, then press <kbd>Enter</kbd>.</>}</span></div>
  </div>;
 }

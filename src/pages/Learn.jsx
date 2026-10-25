@@ -1,8 +1,10 @@
-import {useEffect,useRef,useState} from 'react';
+import Icon from '../components/Icon.jsx';
+import {importLearningPdf,restoreLearningDocument} from '../lib/learning-documents.js';
+import {lazy,Suspense,useEffect,useRef,useState} from 'react';
 import LearningVoice from '../learning/LearningVoice.jsx';
 import WisprInput from '../learning/WisprInput.jsx';
 import {SimulationControls,CodePanel} from '../learning/SimulationLab.jsx';
-import {apiRequest,post} from '../lib/api.js';
+import {apiRequest} from '../lib/api.js';
 import BoardScene from '../learning/BoardScene.jsx';
 import SpokenResponse from '../components/SpokenResponse.jsx';
 import {getPackage,findFocus,localAnswer} from '../../shared/learning/catalog.js';
@@ -11,10 +13,13 @@ import {kitParts,kitPartIds,stepHighlight,findKitPart} from '../../shared/learni
 import {useAuth} from '../lib/auth.jsx';
 import {ensureItem,findItem,uploadItemPdf,getItem,listChats,createChat,listMessages,addMessages} from '../lib/desk.js';
 
+const DocumentJourney=lazy(()=>import('../learning/DocumentJourney.jsx'));
+
 function loadProgress(){try{const v=JSON.parse(localStorage.getItem('pinlight-progress-v3'));return Array.isArray(v)?v.filter(x=>typeof x==='string'):[];}catch{return [];}}
 const SERVO_SWEEP=[20,90,160,90];
 export default function Learn(){
  const {user}=useAuth();
+ const [journeyOpen,setJourneyOpen]=useState(false);
  const [boardId,setBoardId]=useState('raspberry-pi-5'),[document,setDocument]=useState(null),[documents,setDocuments]=useState([]),[uploading,setUploading]=useState(false),[sourceMessage,setSourceMessage]=useState('');
  const {board,experiments,pins,sources}=getPackage(boardId),pi=boardId==='raspberry-pi-5';
  const [mode,setMode]=useState('walkthrough'),[step,setStep]=useState(0),[experimentId,setExperimentId]=useState('first-light'),[command,setCommand]=useState(''),[running,setRunning]=useState(false),[period,setPeriod]=useState(1000),[lit,setLit]=useState(false),[read,setRead]=useState(false),[feedback,setFeedback]=useState(null),[tab,setTab]=useState('overview'),[pin,setPin]=useState(11),[done,setDone]=useState(loadProgress),[rgb,setRgb]=useState([.7,.2,1]),[angle,setAngle]=useState(90),[sweep,setSweep]=useState(true),[pitch,setPitch]=useState(440),[pressed,setPressed]=useState(false),[sound,setSound]=useState(true),[showCode,setShowCode]=useState(false),[focusRequest,setFocusRequest]=useState(0),[cameraCommand,setCameraCommand]=useState(null),[part,setPart]=useState(null),[spotOff,setSpotOff]=useState(false);
@@ -41,7 +46,7 @@ export default function Learn(){
  useEffect(()=>{currentRef.current?.scrollIntoView({block:'nearest',behavior:'smooth'});},[step,mode,experimentId]);
  useEffect(()=>{const onKey=e=>{if(e.key==='Escape'&&!window.document.activeElement?.matches('input,textarea,select'))clearSpot();};addEventListener('keydown',onKey);return()=>removeEventListener('keydown',onKey);},[]);
  // Opening /learn?item=…&chat=… from My desk restores that board/document and conversation.
- useEffect(()=>{if(!user)return;const params=new URLSearchParams(location.search),id=params.get('item');if(!id)return;getItem(id).then(row=>{if(!row)return;if(row.board_id)setBoardId(row.board_id);if(row.local_document_id)apiRequest('/learning/documents').then(rows=>{const doc=rows.find(d=>d.id===row.local_document_id);if(doc)setDocument(doc);}).catch(()=>{});setItem(row);const chat=params.get('chat');listChats(row.id).then(list=>{setChats(list);const pick=list.find(c=>c.id===chat)||list[0];if(pick)openChat(pick.id);});}).catch(e=>setCloudNote(e.message));},[user]);
+ useEffect(()=>{if(!user)return;const params=new URLSearchParams(location.search),id=params.get('item');if(!id)return;getItem(id).then(row=>{if(!row)return;if(row.board_id)setBoardId(row.board_id);if(row.local_document_id||row.file_path)restoreLearningDocument(row).then(doc=>{setDocument(doc);setJourneyOpen(row.slug.startsWith('doc:'));}).catch(e=>setCloudNote(e.message));setItem(row);const chat=params.get('chat');listChats(row.id).then(list=>{setChats(list);const pick=list.find(c=>c.id===chat)||list[0];if(pick)openChat(pick.id);});}).catch(e=>setCloudNote(e.message));},[user]);
  // A new board or document starts a fresh thread.
  useEffect(()=>{if(item&&item.slug===itemSlug)return;setItem(null);setChats([]);setChatId(null);setThread([]);if(!user)return;listChatsFor(itemSlug);},[itemSlug,user]);
  const listChatsFor=async slug=>{try{const row=await findItem(slug);if(!row)return;setItem(row);setChats(await listChats(row.id));}catch(e){setCloudNote(e.message);}};
@@ -59,7 +64,7 @@ export default function Learn(){
  const selectLesson=(id,simulate=false)=>{stop();setMode('experiment');setExperimentId(id);setPart(null);setTab('overview');setFeedback(null);if(simulate){unlockAudio().catch(()=>{});setStep(3);setRunning(true);}else setStep(0);scrollToDesk();};
  const tour=()=>{stop();setMode('walkthrough');setStep(0);setPart(null);setTab('overview');setFeedback(null);};
  const selectPart=(id,answer=null)=>{const index=board.components.findIndex(c=>c.id===id);if(index<0)return;stop();setMode('walkthrough');setStep(index);setPart(null);setTab('overview');setFocusRequest(n=>n+1);setFeedback(answer);scrollToDesk();};
- const openBoard=(id,doc)=>{stop();questionRequest.current?.abort();setBoardId(id);setDocument(doc||documents.find(d=>d.status==='supported'&&d.matches[0].boardId===id)||null);setMode('walkthrough');setStep(0);setPart(null);setTab('overview');setPin(id==='raspberry-pi-5'?11:'D9');setFeedback(null);setFocusRequest(n=>n+1);scrollToDesk();};
+ const openBoard=(id,doc)=>{setJourneyOpen(false);stop();questionRequest.current?.abort();setBoardId(id);setDocument(doc||documents.find(d=>d.status==='supported'&&d.matches[0].boardId===id)||null);setMode('walkthrough');setStep(0);setPart(null);setTab('overview');setPin(id==='raspberry-pi-5'?11:'D9');setFeedback(null);setFocusRequest(n=>n+1);scrollToDesk();};
  const goStep=i=>{if(experiment&&i===steps.length-1){run();return steps[i].text;}stop();setPart(null);setStep(i);setTab('overview');setFeedback(null);return experiment?steps[i].text:steps[i].detail;};
  const move=d=>{const next=Math.max(0,Math.min(steps.length-1,step+d));scrollToDesk();return goStep(next);};
  const mark=()=>{setDone(v=>v.includes(key)?v:[...v,key]);if(step<steps.length-1)move(1);else setFeedback({text:experiment?'Lesson complete. Try the challenge, or pick another circuit.':'Board tour complete. Now make something with it: open step 02.'});};
@@ -105,12 +110,11 @@ export default function Learn(){
  };
  const converse=async text=>{lastAnswer.current=null;setThread(t=>[...t,{role:'user',text}]);const reply=(await handleInput(text))||'Done.';const meta=lastAnswer.current,answer={role:'assistant',text:reply,engine:meta?.engine||'command',notice:meta?.notice,sources:(meta?.sources||[meta?.source]).filter(id=>sources[id])};setThread(t=>[...t,answer]);save([{role:'user',text},answer]);return reply;};
  const submit=async e=>{e.preventDefault();if(asking||voiceActive)return;const text=command.trim();if(!text)return;setCommand('');await converse(text);};
- const upload=async e=>{const file=e.target.files?.[0];if(!file)return;setUploading(true);setSourceMessage('Reading the PDF…');try{if(file.size>20*1024*1024)throw Error('Choose a PDF smaller than 20 MB.');const imported=await apiRequest(`/documents?name=${encodeURIComponent(file.name)}`,{method:'POST',headers:{'Content-Type':'application/pdf'},body:file});const resolved=await post('/learning/resolve',{documentId:imported.document.id});const rows=await apiRequest('/learning/documents');setDocuments(rows);const doc=rows.find(d=>d.id===resolved.documentId);
-   if(user&&doc){try{const supported=resolved.status==='supported',id=supported&&resolved.matches[0].boardId;const row=await ensureItem(supported?{slug:`board:${id}`,kind:'board',title:getPackage(id).board.name,boardId:id,localDocumentId:doc.id}:{slug:`doc:${doc.revision}`,kind:resolved.kind,title:doc.title,localDocumentId:doc.id});await uploadItemPdf(row,file);}catch(error){setCloudNote(`Saved locally only: ${error.message}`);}}
-   const saved=user?' Saved to My desk.':'';
-   if(resolved.status==='supported'){openBoard(resolved.matches[0].boardId,doc);setSourceMessage(`Identified from page ${resolved.matches[0].page}. Opened the supported learning model.${saved}`);}else setSourceMessage(resolved.status==='ambiguous'?`This PDF mentions both supported boards. Choose a specific board document.${saved}`:`Sorted as a ${resolved.kind}. You can ask questions about it below; a 3D model for this ${resolved.kind} is not generated yet.${saved}`);
-   if(resolved.status!=='supported'&&doc)setDocument(doc);
-  }catch(error){setSourceMessage(error.message);}finally{setUploading(false);e.target.value='';}};
+ const upload=async e=>{const input=e.target,file=input.files?.[0];if(!file)return;setUploading(true);setSourceMessage('Reading the PDF…');setCloudNote('');
+  try{const doc=await importLearningPdf(file);setDocuments(rows=>[doc,...rows.filter(d=>d.id!==doc.id)]);setDocument(doc);setJourneyOpen(true);stop();setSourceMessage('');
+   if(user){try{const row=await ensureItem({slug:`doc:${doc.revision}`,kind:doc.kind,title:doc.title,localDocumentId:doc.id});await uploadItemPdf(row,file);}catch(error){setCloudNote(`PDF saved locally; cloud upload failed: ${error.message}`);}}
+  }catch(error){setSourceMessage(error.message);}finally{setUploading(false);input.value='';}
+ };
  const output=running&&(lesson.kind==='button'?pressed:lesson.kind==='rgb'||lesson.kind==='servo'?true:lit),simulationState={running,period,rgb,angle,pitch,pressed,sound,lit,sweep};
  const highlight=spotOff||tab==='pinout'?null:experiment?(part?[part]:running?null:stepHighlight(lesson.kind,current.id)):(focus==='board'?null:[focus]);
  const stage=running||part?.startsWith('wire')?3:step;
@@ -121,13 +125,15 @@ export default function Learn(){
  const stepBody=<>
   <p>{narration}</p>
   {experiment&&step===0&&<div className="parts-list">{lesson.parts.map(p=><span key={p}>{p}</span>)}</div>}
-  {experiment&&step===steps.length-1&&<div className="run-panel"><button className="button button-dark quick-simulate" onClick={()=>running?stop():run()}>{running?'Pause ❚❚':'Run it ▶'}</button></div>}
-  <div className="lesson-navigation"><button className="button button-light" onClick={()=>move(-1)} disabled={!step}>← Back</button><button className="button button-dark" onClick={mark}>{step===steps.length-1?'Complete ✓':experiment&&step===steps.length-2?'Run it →':'Next →'}</button></div>
-  <a className="lesson-source" href={sources[feedback?.sources?.[0]||feedback?.source||(experiment?'recipes':current.source)]?.url||sources.overview.url} target="_blank" rel="noreferrer">Read the source ↗</a>
+  {experiment&&step===steps.length-1&&<div className="run-panel"><button className="button button-dark quick-simulate" onClick={()=>running?stop():run()}>{running?<>{"Pause "}<Icon name="pause" size={16}/></>:<>{"Run it "}<Icon name="play" size={16}/></>}</button></div>}
+  <div className="lesson-navigation"><button className="button button-light" onClick={()=>move(-1)} disabled={!step}><><Icon name="left" size={16}/>{" Back"}</></button><button className="button button-dark" onClick={mark}>{step===steps.length-1?<>{"Complete "}<Icon name="check" size={16}/></>:experiment&&step===steps.length-2?<>{"Run it "}<Icon name="arrow" size={16}/></>:<>{"Next "}<Icon name="arrow" size={16}/></>}</button></div>
+  <a className="lesson-source" href={sources[feedback?.sources?.[0]||feedback?.source||(experiment?'recipes':current.source)]?.url||sources.overview.url} target="_blank" rel="noreferrer"><>{"Read the source "}<Icon name="diagonal" size={16}/></></a>
  </>;
+ if(journeyOpen&&document)return <><input ref={uploadRef} type="file" accept="application/pdf,.pdf" hidden onChange={upload}/><Suspense fallback={<p role="status">Opening your PDF journey…</p>}><DocumentJourney expectedPipelineVersion={connection?.processing?.version} key={document.id} document={document} onBack={()=>{setJourneyOpen(false);setDocument(null);}} onUpload={()=>uploadRef.current.click()} uploading={uploading}/></Suspense>{sourceMessage&&<p role="status">{sourceMessage}</p>}{cloudNote&&<p role="alert">{cloudNote}</p>}</>;
  return <section className="studio" ref={deskRef}>
   <header className="studio-bar">
-   <div className="studio-boards" role="group" aria-label="Board">{['raspberry-pi-5','arduino-uno-r3'].map(id=>{const doc=documents.find(d=>d.status==='supported'&&d.matches[0].boardId===id);return <button key={id} aria-pressed={id===boardId} onClick={()=>openBoard(id,doc)} title={doc?`From ${doc.title}`:'Prepared board package'}>{getPackage(id).board.name}</button>;})}<input ref={uploadRef} type="file" accept="application/pdf,.pdf" hidden onChange={upload}/><button className="studio-upload" disabled={uploading} onClick={()=>uploadRef.current.click()}>{uploading?'Reading…':'+ Upload a datasheet'}</button></div>
+   <div className="studio-boards" role="group" aria-label="Board">{['raspberry-pi-5','arduino-uno-r3'].map(id=>{const doc=documents.find(d=>d.status==='supported'&&d.matches[0].boardId===id);return <button key={id} aria-pressed={id===boardId} onClick={()=>openBoard(id,doc)} title={doc?`From ${doc.title}`:'Prepared board package'}>{getPackage(id).board.name}</button>;})}<input ref={uploadRef} type="file" accept="application/pdf,.pdf" hidden onChange={upload}/><button className="studio-upload" title={connection?.extraction?.provider==='groq'?'PDF text and selected page images are sent to Groq for analysis':'PDF processing runs locally'} disabled={uploading} onClick={()=>uploadRef.current.click()}>{uploading?'Reading…':'+ Upload a datasheet'}</button></div>
+   {documents.length>0&&<select aria-label="Open uploaded PDF journey" value="" onChange={e=>{const doc=documents.find(d=>d.id===e.target.value);if(doc){stop();setDocument(doc);setJourneyOpen(true);}}}><option value="">Your PDF journeys</option>{documents.map(d=><option key={d.id} value={d.id}>{d.title}</option>)}</select>}
    <div className="studio-modes" role="group" aria-label="Mode"><button aria-pressed={!experiment} onClick={tour}><b>1</b> Explore the board</button><button aria-pressed={experiment} onClick={()=>selectLesson(experimentId)}><b>2</b> Make something</button></div>
    <div className="studio-status"><span>{boardDone}/{board.components.length} stops</span><span className={`live-pill ${running?'is-live':''}`}>{running?'● RUNNING':'● READY'}</span></div>
   </header>
@@ -136,7 +142,7 @@ export default function Learn(){
     <div className="chat-head"><div><strong>Ask the tutor</strong><small>It points to what it’s talking about.</small></div>{user?<div className="chat-switcher"><select aria-label="Chats for this board" value={chatId||''} onChange={e=>e.target.value?openChat(e.target.value):newChat()}><option value="">New chat</option>{chats.map(c=><option key={c.id} value={c.id}>{c.title}</option>)}</select></div>:null}</div>
     <div className="chat-thread" ref={threadRef} aria-live="polite">
      {!thread.length&&<div className="chat-empty"><p>Ask anything about what you see, or tell the desk what to do.</p>{suggestions.map(s=><button key={s} onClick={()=>!asking&&converse(s)}>{s}</button>)}</div>}
-     {thread.map((m,i)=><div key={i} className={`chat-msg ${m.role}`}><small>{m.role==='user'?'You':m.engine==='ai'?'AI tutor · source-linked':m.engine==='command'?'Desk':m.notice||'Lesson guide'}</small><p>{m.text}</p>{m.sources?.filter(id=>sources[id]).map(id=><a key={id} href={sources[id].url} target="_blank" rel="noreferrer">{sources[id].title} ↗</a>)}</div>)}
+     {thread.map((m,i)=><div key={i} className={`chat-msg ${m.role}`}><small>{m.role==='user'?'You':m.engine==='ai'?'AI tutor · source-linked':m.engine==='command'?'Desk':m.notice||'Lesson guide'}</small><p>{m.text}</p>{m.sources?.filter(id=>sources[id]).map(id=><a key={id} href={sources[id].url} target="_blank" rel="noreferrer">{sources[id].title}<>{" "}<Icon name="diagonal" size={16}/></></a>)}</div>)}
      {asking&&<div className="chat-msg assistant pending"><small>Thinking…</small><p>…</p></div>}
     </div>
     <WisprInput id="lesson-command" value={command} onChange={setCommand} onSend={text=>{setCommand('');converse(text);}} busy={asking} disabled={voiceActive} placeholder={experiment?'Why the resistor? · Run it · Slower':'What does RP1 do? · Show GPIO · Next'}/>
@@ -146,7 +152,7 @@ export default function Learn(){
    <div className="studio-stage">
     <div className="scene-topline"><span>{experiment?lesson.title.toUpperCase():`${board.name.toUpperCase()} / EXPLORE`}</span>{experiment&&<button className="code-toggle" aria-pressed={showCode} onClick={()=>setShowCode(v=>!v)}>{showCode?'Hide code':'</> Code'}</button>}</div>
     <BoardScene boardId={boardId} lesson={lesson} focus={focus} focusRequest={focusRequest} cameraCommand={cameraCommand} experiment={experiment} kind={lesson.kind} stage={stage} lit={output} rgb={rgb} angle={angle} pressed={running&&pressed} selectedPin={tab==='pinout'&&!spotOff?selectedPin.physical:null} highlight={highlight} callout={callout} onSelect={onSceneSelect} onClear={clearSpot} onPin={p=>{setSpotOff(false);setPin(p);if(!experiment)selectPart('gpio');setTab('pinout');}}/>
-    {sourceMessage&&<div className="stage-toast" role="status"><span>{sourceMessage}</span><button onClick={()=>setSourceMessage('')} aria-label="Dismiss">×</button></div>}
+    {sourceMessage&&<div className="stage-toast" role="status"><span>{sourceMessage}</span><button onClick={()=>setSourceMessage('')} aria-label="Dismiss"><><Icon name="close" size={16}/></></button></div>}
     {experiment&&<div className="stage-readout"><span className={`led-status ${output?'is-on':''}`}/><strong>{pi?`GPIO${lesson.gpio} / pin ${lesson.signalPin}`:lesson.signalPin}</strong><span>{!running?'Not running':lesson.kind==='button'?(pressed?'LOW · pressed':'HIGH · tap the button'):lesson.kind==='servo'?`${angle}°${sweep?' · sweeping':''}`:lesson.kind==='rgb'?'PWM colour mix':lit?'HIGH':'LOW'}</span><div className="part-chips" aria-label="Parts in this circuit">{toolPartIds.map(id=><button key={id} aria-pressed={part===id&&!spotOff} onClick={()=>part===id&&!spotOff?clearSpot():focusPart(id)}>{kitParts[id].name}</button>)}</div></div>}
     {experiment&&showCode&&<div className="code-drawer"><CodePanel boardId={boardId} lesson={lesson} state={simulationState} showCode setShowCode={setShowCode}/></div>}
    </div>
@@ -156,17 +162,17 @@ export default function Learn(){
     <div className="trail-scroll">
      {partInfo&&!spotOff&&<div className="trail-part"><div className="eyebrow">PART IN FOCUS</div><h3>{partInfo.name}</h3><p>{partInfo.detail}</p><div className="lesson-navigation"><button className="button button-light" onClick={clearSpot}>Clear</button>{part==='kit-button'&&lesson.kind==='button'&&<button className="button button-dark" onClick={pressButton}>Press it</button>}</div></div>}
      {experiment?<>
-      <button className="trail-back" onClick={tour}>← Back to the board tour</button>
-      <div className="trail-title"><span className={`kit-icon kit-${lesson.kind}`}>{lesson.icon}</span><div><strong>{lesson.title}</strong><small>{lesson.subtitle}</small></div></div>
-      <ol className="trail-list">{steps.map((s,i)=><li key={s.id} className={i===step?'is-current':''} ref={i===step?currentRef:null}><button onClick={()=>goStep(i)}><b>{done.includes(`${boardId}/${lesson.id}/${s.id}`)?'✓':i+1}</b><span>{s.title}</span></button>{i===step&&<div className="trail-body">{stepBody}</div>}</li>)}</ol>
+      <button className="trail-back" onClick={tour}><><Icon name="left" size={16}/>{" Back to the board tour"}</></button>
+      <div className="trail-title"><span className={`kit-icon kit-${lesson.kind}`}><Icon name={lesson.kind} size={26}/></span><div><strong>{lesson.title}</strong><small>{lesson.subtitle}</small></div></div>
+      <ol className="trail-list">{steps.map((s,i)=><li key={s.id} className={i===step?'is-current':''} ref={i===step?currentRef:null}><button onClick={()=>goStep(i)}><b>{done.includes(`${boardId}/${lesson.id}/${s.id}`)?<><Icon name="check" size={16}/></>:i+1}</b><span>{s.title}</span></button>{i===step&&<div className="trail-body">{stepBody}</div>}</li>)}</ol>
       {(running||step===steps.length-1)&&<div className="trail-controls"><div className="eyebrow">CONTROLS</div><SimulationControls boardId={boardId} lesson={lesson} state={simulationState} setPeriod={setPeriod} setRgb={setRgb} setAngle={v=>{setSweep(false);setAngle(v);}} setSweep={setSweep} setPitch={setPitch} setPressed={setPressed} onSound={()=>enableSound()}/></div>}
-      <div className="lesson-challenge"><span>✧ TRY THIS NEXT</span><p>{lesson.challenge}</p></div>
+      <div className="lesson-challenge"><span><><Icon name="target" size={16}/>{" TRY THIS NEXT"}</></span><p>{lesson.challenge}</p></div>
       <div className="trail-section">Other circuits</div>
-      <div className="trail-circuits">{experiments.filter(e=>e.id!==lesson.id).map(e=><button key={e.id} onClick={()=>selectLesson(e.id)}><span className={`kit-icon kit-${e.kind}`}>{e.icon}</span><span><strong>{e.title}</strong><small>{e.subtitle}</small></span>{done.includes(`${boardId}/${e.id}/run`)&&<b>✓</b>}</button>)}</div>
+      <div className="trail-circuits">{experiments.filter(e=>e.id!==lesson.id).map(e=><button key={e.id} onClick={()=>selectLesson(e.id)}><span className={`kit-icon kit-${e.kind}`}><Icon name={e.kind} size={26}/></span><span><strong>{e.title}</strong><small>{e.subtitle}</small></span>{done.includes(`${boardId}/${e.id}/run`)&&<b><><Icon name="check" size={16}/></></b>}</button>)}</div>
      </>:<>
-      <ol className="trail-list">{board.components.map((c,i)=><li key={c.id} className={i===step?'is-current':''} ref={i===step?currentRef:null}><button onClick={()=>selectPart(c.id)}><b>{done.includes(`${boardId}/${c.id}`)?'✓':String(i+1).padStart(2,'0')}</b><span>{c.name}</span></button>{i===step&&<div className="trail-body">{stepBody}</div>}</li>)}</ol>
+      <ol className="trail-list">{board.components.map((c,i)=><li key={c.id} className={i===step?'is-current':''} ref={i===step?currentRef:null}><button onClick={()=>selectPart(c.id)}><b>{done.includes(`${boardId}/${c.id}`)?<><Icon name="check" size={16}/></>:String(i+1).padStart(2,'0')}</b><span>{c.name}</span></button>{i===step&&<div className="trail-body">{stepBody}</div>}</li>)}</ol>
       <div className="trail-section">Then make something</div>
-      <div className="trail-circuits">{experiments.map(e=><button key={e.id} onClick={()=>selectLesson(e.id)}><span className={`kit-icon kit-${e.kind}`}>{e.icon}</span><span><strong>{e.title}</strong><small>{e.subtitle}</small></span>{done.includes(`${boardId}/${e.id}/run`)?<b>✓</b>:<b>→</b>}</button>)}</div>
+      <div className="trail-circuits">{experiments.map(e=><button key={e.id} onClick={()=>selectLesson(e.id)}><span className={`kit-icon kit-${e.kind}`}><Icon name={e.kind} size={26}/></span><span><strong>{e.title}</strong><small>{e.subtitle}</small></span>{done.includes(`${boardId}/${e.id}/run`)?<b><><Icon name="check" size={16}/></></b>:<b><><Icon name="arrow" size={16}/></></b>}</button>)}</div>
      </>}
     </div>}
     <label className="read-aloud-setting"><input type="checkbox" checked={read} disabled={voiceActive} onChange={e=>setRead(e.target.checked)}/> Read steps aloud</label>{read&&<SpokenResponse text={partInfo?.detail||feedback?.text||narration} autoRead={read} blocked={voiceActive}/>}
