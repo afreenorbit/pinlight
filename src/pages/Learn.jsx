@@ -6,7 +6,6 @@ import WisprInput from '../learning/WisprInput.jsx';
 import {SimulationControls,CodePanel} from '../learning/SimulationLab.jsx';
 import {apiRequest} from '../lib/api.js';
 import BoardScene from '../learning/BoardScene.jsx';
-import SpokenResponse from '../components/SpokenResponse.jsx';
 import {getPackage,findFocus,localAnswer} from '../../shared/learning/catalog.js';
 import {parseLessonCommand} from '../../shared/learning/commands.js';
 import {kitParts,kitPartIds,stepHighlight,findKitPart} from '../../shared/learning/kit-parts.js';
@@ -22,8 +21,8 @@ export default function Learn(){
  const [journeyOpen,setJourneyOpen]=useState(false);
  const [boardId,setBoardId]=useState('raspberry-pi-5'),[document,setDocument]=useState(null),[documents,setDocuments]=useState([]),[uploading,setUploading]=useState(false),[sourceMessage,setSourceMessage]=useState('');
  const {board,experiments,pins,sources}=getPackage(boardId),pi=boardId==='raspberry-pi-5';
- const [mode,setMode]=useState('walkthrough'),[step,setStep]=useState(0),[experimentId,setExperimentId]=useState('first-light'),[command,setCommand]=useState(''),[running,setRunning]=useState(false),[period,setPeriod]=useState(1000),[lit,setLit]=useState(false),[read,setRead]=useState(false),[feedback,setFeedback]=useState(null),[tab,setTab]=useState('overview'),[pin,setPin]=useState(11),[done,setDone]=useState(loadProgress),[rgb,setRgb]=useState([.7,.2,1]),[angle,setAngle]=useState(90),[sweep,setSweep]=useState(true),[pitch,setPitch]=useState(440),[pressed,setPressed]=useState(false),[sound,setSound]=useState(true),[showCode,setShowCode]=useState(false),[focusRequest,setFocusRequest]=useState(0),[cameraCommand,setCameraCommand]=useState(null),[part,setPart]=useState(null),[spotOff,setSpotOff]=useState(false);
- const audio=useRef(null),questionRequest=useRef(null),deskRef=useRef(null),uploadRef=useRef(null),pressTimer=useRef(null),lastAnswer=useRef(null),threadRef=useRef(null),currentRef=useRef(null);
+ const [mode,setMode]=useState('walkthrough'),[step,setStep]=useState(0),[experimentId,setExperimentId]=useState('first-light'),[command,setCommand]=useState(''),[running,setRunning]=useState(false),[period,setPeriod]=useState(1000),[lit,setLit]=useState(false),[feedback,setFeedback]=useState(null),[tab,setTab]=useState('overview'),[pin,setPin]=useState(11),[done,setDone]=useState(loadProgress),[rgb,setRgb]=useState([.7,.2,1]),[angle,setAngle]=useState(90),[sweep,setSweep]=useState(true),[pitch,setPitch]=useState(440),[pressed,setPressed]=useState(false),[sound,setSound]=useState(true),[showCode,setShowCode]=useState(false),[focusRequest,setFocusRequest]=useState(0),[cameraCommand,setCameraCommand]=useState(null),[part,setPart]=useState(null),[spotOff,setSpotOff]=useState(false);
+ const voicePanel=useRef(null),audio=useRef(null),questionRequest=useRef(null),deskRef=useRef(null),uploadRef=useRef(null),pressTimer=useRef(null),lastAnswer=useRef(null),threadRef=useRef(null),currentRef=useRef(null);
  const [connection,setConnection]=useState(null),[asking,setAsking]=useState(false),[voiceActive,setVoiceActive]=useState(false),handsFree=false;
  // Conversation thread: always shown, saved per learning item and chat when signed in.
  const [thread,setThread]=useState([]),[item,setItem]=useState(null),[chats,setChats]=useState([]),[chatId,setChatId]=useState(null),[cloudNote,setCloudNote]=useState('');
@@ -38,7 +37,7 @@ export default function Learn(){
  useEffect(()=>{if(!running){setLit(false);return;}setLit(true);const t=setInterval(()=>setLit(v=>!v),period);return()=>clearInterval(t);},[running,period]);
  useEffect(()=>{if(!running||lesson.kind!=='servo'||!sweep)return;let i=0;setAngle(SERVO_SWEEP[0]);const t=setInterval(()=>{i=(i+1)%SERVO_SWEEP.length;setAngle(SERVO_SWEEP[i]);},Math.max(500,period));return()=>clearInterval(t);},[running,lesson.kind,sweep,period]);
  useEffect(()=>{if(!sound||!running||lesson.kind!=='buzzer'||!lit||voiceActive||handsFree)return;const ctx=audio.current;if(!ctx)return;const oscillator=ctx.createOscillator(),gain=ctx.createGain();oscillator.type='square';gain.gain.setValueAtTime(0,ctx.currentTime);gain.gain.linearRampToValueAtTime(.05,ctx.currentTime+.01);oscillator.frequency.value=pitch;oscillator.connect(gain);gain.connect(ctx.destination);oscillator.start();return()=>{gain.gain.linearRampToValueAtTime(0,ctx.currentTime+.02);oscillator.stop(ctx.currentTime+.03);};},[sound,running,lit,lesson.kind,pitch,voiceActive,handsFree]);
- useEffect(()=>()=>{window.speechSynthesis?.cancel();audio.current?.close();clearTimeout(pressTimer.current);},[]);
+ useEffect(()=>()=>{audio.current?.close();clearTimeout(pressTimer.current);},[]);
  useEffect(()=>{threadRef.current?.scrollTo({top:threadRef.current.scrollHeight,behavior:'smooth'});},[thread,asking]);
  // Any new choice brings the spotlight back; clearing (empty tap, double-tap, Esc) only lasts until then.
  useEffect(()=>{setSpotOff(false);},[step,mode,experimentId,boardId,focusRequest,feedback]);
@@ -58,7 +57,7 @@ export default function Learn(){
  const clearSpot=()=>{setPart(null);setSpotOff(true);};
  const focusPart=id=>{setTab('overview');setFeedback(null);setSpotOff(false);setPart(id);};
  const unlockAudio=async()=>{const Audio=window.AudioContext||window.webkitAudioContext;if(!Audio)return;audio.current ||=new Audio();await audio.current.resume();};
- const stop=()=>{setRunning(false);setPressed(false);window.speechSynthesis?.cancel();};
+ const stop=()=>{setRunning(false);setPressed(false);};
  // Running always comes from a click or a command, so it is also the moment to unlock browser audio.
  const run=()=>{unlockAudio().catch(()=>{});setPart(null);setStep(3);setRunning(true);};
  const selectLesson=(id,simulate=false)=>{stop();setMode('experiment');setExperimentId(id);setPart(null);setTab('overview');setFeedback(null);if(simulate){unlockAudio().catch(()=>{});setStep(3);setRunning(true);}else setStep(0);scrollToDesk();};
@@ -147,7 +146,7 @@ export default function Learn(){
     </div>
     <WisprInput id="lesson-command" value={command} onChange={setCommand} onSend={text=>{setCommand('');converse(text);}} busy={asking} disabled={voiceActive} placeholder={experiment?'Why the resistor? · Run it · Slower':'What does RP1 do? · Show GPIO · Next'}/>
     {cloudNote&&<p className="command-help" role="alert">{cloudNote}</p>}
-    <details className="studio-voice"><summary>Talk it through out loud <small>English / हिंदी</small></summary><LearningVoice context={context} blocked={false} configured={!!connection?.voice?.configured} onActiveChange={active=>{setVoiceActive(active);if(active){setRead(false);setSound(false);setRunning(false);questionRequest.current?.abort();}}}/></details>
+    <details className="studio-voice" ref={voicePanel}><summary>Talk with Bolna <small>English / हिंदी</small></summary><LearningVoice context={context} blocked={false} configured={!!connection?.voice?.configured} onActiveChange={active=>{setVoiceActive(active);if(active){setSound(false);setRunning(false);questionRequest.current?.abort();}}}/></details>
    </aside>
    <div className="studio-stage">
     <div className="scene-topline"><span>{experiment?lesson.title.toUpperCase():`${board.name.toUpperCase()} / EXPLORE`}</span>{experiment&&<button className="code-toggle" aria-pressed={showCode} onClick={()=>setShowCode(v=>!v)}>{showCode?'Hide code':'</> Code'}</button>}</div>
@@ -175,7 +174,7 @@ export default function Learn(){
       <div className="trail-circuits">{experiments.map(e=><button key={e.id} onClick={()=>selectLesson(e.id)}><span className={`kit-icon kit-${e.kind}`}><Icon name={e.kind} size={26}/></span><span><strong>{e.title}</strong><small>{e.subtitle}</small></span>{done.includes(`${boardId}/${e.id}/run`)?<b><><Icon name="check" size={16}/></></b>:<b><><Icon name="arrow" size={16}/></></b>}</button>)}</div>
      </>}
     </div>}
-    <label className="read-aloud-setting"><input type="checkbox" checked={read} disabled={voiceActive} onChange={e=>setRead(e.target.checked)}/> Read steps aloud</label>{read&&<SpokenResponse text={partInfo?.detail||feedback?.text||narration} autoRead={read} blocked={voiceActive}/>}
+    <button className="text-link read-aloud-setting" onClick={()=>{if(voicePanel.current){voicePanel.current.open=true;voicePanel.current.scrollIntoView({behavior:'smooth',block:'center'});}}}>Read this step aloud with Bolna</button><small>Open the voice controls, choose a language and consent to start the call.</small>
    </aside>
   </div>
  </section>;

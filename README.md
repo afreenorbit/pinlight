@@ -1,8 +1,10 @@
 # Pinlight
 
+Voice verification (25 October 2026): the deployed API reports Bolna configured, and the dedicated Pinlight agent is configured for ElevenLabs English and Sarvam Hindi. The inspected execution history contains one failed browser call (0 seconds, $0, “Call could not be connected”). Successful provider audio is not yet verified. Previously, “Read steps aloud” used browser speech synthesis. The updated source routes step narration to the same consented Bolna call; it still needs deployment and a successful microphone test.
+
 **Understand the board. Follow the connection. See what changes.**
 
-Pinlight turns electronics PDFs into source-linked learning journeys, alongside prepared Raspberry Pi 5 and Arduino Uno R3 lessons. It brings a selectable 3D board, guided circuit activities, reference code and a source-linked AI tutor into one workspace.
+Pinlight turns electronics PDFs into source-linked learning journeys, alongside prepared Raspberry Pi 5 and Arduino Uno R3 lessons. It brings a selectable 3D board, guided circuit activities, reference code, a source-linked AI tutor and a consent-gated voice tutor into one workspace.
 
 Built for the [Hacktoberfest Open-Source AI Challenge Week 3: Slow and Steady](https://dev.to/challenges/hacktoberfest-week3-2026-10-19).
 
@@ -21,6 +23,7 @@ Today, the catalogue includes **2 boards, 5 experiment types per board and 20 gu
 - Explore the board in 3D, select parts and follow explanations linked to reference sources.
 - Try **Blink an LED**, **Read a button press**, **Set the RGB balance**, **Tune a piezo tone** and **Position a servo**. Change controls and inspect the matching Python or Arduino reference code.
 - Ask the tutor about the current lesson. Mastra orchestrates `gpt-oss-120b` through Groq; the server validates returned source IDs and component targets. A labelled curated guide is available when live AI is unavailable.
+- Talk it through out loud in English or Hindi. The voice tutor is consent-gated, capped at three minutes, and read-only: it can discuss the current lesson but cannot move the 3D scene or run a circuit.
 - Upload an electronics PDF to create a persistent processing job, extract device specifications with source citations, explore approximate 3D components, review pins and dimensions, try ideal voltage-divider or capacitor-charge experiments, and search for related manufacturer references through SerpApi.
 - Sign in with Auth0 to save documents, chats, journeys and progress in My desk. Owner-scoped row-level security and private storage keep each account's files separate. Guests can explore; cloud saving needs an account.
 
@@ -28,11 +31,29 @@ Today, the catalogue includes **2 boards, 5 experiment types per board and 20 gu
 
 ## How it works
 
-React and Vite power the interface, with Three.js for the original board illustrations. A Node API assembles lesson context, runs the Mastra tutor and processes uploads. PDF.js and Tesseract.js handle document text and OCR; Docling is an optional local table-layout worker. Supabase stores accounts, documents and saved journeys. Auth0 provides hosted sign-in and audience-bound API tokens. SerpApi supplies manufacturer reference links. The live deployment uses Vercel for the frontend, Render for the API, Groq for model inference and a `.tech` domain.
+Pinlight is split into a browser desk, a Node API and a small set of provider integrations:
 
-Open weights leave room to change inference providers, while the open agent framework makes the tutor workflow inspectable and adaptable. Current AI inference is hosted and requires internet access. Provider credentials stay on the server.
+- **Browser desk:** React 19 and Vite, with Three.js for the original board illustrations. The desk owns the 3D scene, guided steps, code preview and chat.
+- **API:** Node 24 on Render. It verifies Auth0 tokens, assembles server-owned lesson snapshots, runs the Mastra tutor, validates answers, processes PDFs, proxies SerpApi and mints Bolna voice sessions.
+- **Typed tutor:** Mastra orchestrates `openai/gpt-oss-120b` through Groq. The server sends a bounded lesson snapshot and a strict output schema, then checks every returned evidence ID and component target before the answer reaches the scene. The browser cannot inject its own prompt text.
+- **Voice tutor:** a separate Bolna conversation path. Deepgram `nova-3` handles speech-to-text, OpenAI `gpt-4.1-mini` handles the reply, and ElevenLabs `eleven_turbo_v2_5` (voice Angelica) handles English speech. Hindi uses Sarvam `bulbul:v3` (voice Suhani). The voice path is consent-gated, capped at three minutes, and has no scene tools.
+- **ElevenLabs access:** Bolna is the orchestrator, not a model owner. Its preferred-model bundle includes ElevenLabs `eleven_turbo_v2_5`, so Pinlight uses Bolna's provider integration and does not need a direct `ELEVENLABS_API_KEY` for the standard Angelica voice. A cloned or custom voice would require connecting your own ElevenLabs account in Bolna.
+- **Data:** Supabase provides Postgres, row-level security and private document storage. Auth0 provides hosted sign-in and audience-bound API tokens. Local development uses SQLite for documents and processing jobs.
+- **Documents:** PDF.js extracts text with coordinates, Tesseract.js handles image-only pages, and Docling is an optional local table-layout worker. Zod and source checks remove unsupported references, numbers and pin labels.
+- **Hosting:** Vercel serves the frontend, Render runs the API, Groq serves the open-weight tutor and a `.tech` domain fronts the live app.
 
-**Current limits:** generated geometry remains approximate. Source checks reduce unsupported claims but do not independently verify every extracted relationship. Uploaded devices do not automatically become electrically accurate simulations. The new experiments solve ideal teaching circuits with explicit example values. Browser clients cannot supply their own prompt or override the lesson evidence set.
+Open weights leave room to change inference providers, while the open agent framework makes the typed tutor workflow inspectable and adaptable. Current AI inference is hosted and requires internet access. Provider credentials stay on the server.
+
+**Current limits:** generated geometry remains approximate. Source checks reduce unsupported claims but do not independently verify every extracted relationship. Uploaded devices do not automatically become electrically accurate simulations. The new experiments solve ideal teaching circuits with explicit example values. Browser clients cannot supply their own prompt or override the lesson evidence set. The voice tutor is a separate conversation path: it does not control the scene, has no live tool access and has not been measured across devices. Voice sessions use account credits and may be stored by the voice service.
+
+## Challenge integrations
+
+- **Render:** runs the Node API, including the Mastra tutor, Auth0 verification, PDF processing, SerpApi proxy and Bolna session minting.
+- **Mastra:** orchestrates the open-weight `gpt-oss-120b` typed tutor with a server-owned snapshot and strict evidence validation.
+- **Auth0:** provides hosted sign-in and audience-bound API tokens; Supabase row-level security scopes saved items, chats and PDFs to the verified owner.
+- **SerpApi:** supplies manufacturer reference links for an explicitly submitted part name. Results are cached, deduplicated and rate-limited.
+- **ElevenLabs via Bolna:** provides English voice synthesis (`eleven_turbo_v2_5`, voice Angelica) for the consented voice tutor. Hindi uses Sarvam `bulbul:v3` (voice Suhani). The app does not hold a direct ElevenLabs key for the standard voice.
+- **`.tech`:** the live app runs at [pinlight.afreenorbit.tech](https://pinlight.afreenorbit.tech), with its API at `api.afreenorbit.tech`.
 
 See [the PDF pipeline](docs/pdf-pipeline.md) for processing, provider configuration, cloud storage, validation and deployment boundaries. See [Auth0 setup](docs/auth0-setup.md) for provider-side sign-in and Supabase ownership configuration.
 
@@ -55,6 +76,8 @@ Open [localhost:5173](http://localhost:5173/learn). The local API uses `127.0.0.
 
 Optional accounts and saved desks need `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_ACCOUNTS=on` and the Auth0 values in `.env.example`. Apply `supabase/migrations/0001_pinlight_desk.sql`, `0002_learning_artifacts.sql` and `0003_auth0_ownership.sql`, or run `npm run migrate:learning` with a server-only `DATABASE_URL`, `DATABASE_SSL_CA`, `VITE_SUPABASE_URL` (or `SUPABASE_URL`) and, when using Auth0, `AUTH0_DOMAIN`. The runner applies the ownership migration when the function is missing or Auth0 is configured, so native Supabase accounts also get `current_owner_key()`. Back up the entire `data/` directory to preserve local PDFs, jobs and generated journeys.
 
+Optional voice tutor: set `BOLNA_API_KEY` and run `npm run configure:learning-voice`. The script creates or reuses the `Pinlight Raspberry Pi Tutor` agent and writes `BOLNA_LEARNING_AGENT_ID` to `.env`. The learning voice service reads `BOLNA_LEARNING_AGENT_ID`; if your `.env` only has the older `BOLNA_AGENT_ID`, add the new name. The standard English voice uses Bolna's preferred-model ElevenLabs integration, so no direct `ELEVENLABS_API_KEY` is required. Hindi uses Sarvam. For a custom or cloned voice, connect your own ElevenLabs account in Bolna and update the voice ID in the agent config.
+
 ## Checks and technical notes
 
 ```sh
@@ -62,6 +85,10 @@ npm test
 npm run build
 ```
 
-Optional provider checks, `npm run test:learning-live` and `npm run test:live`, require credentials and make real provider requests. They do not verify microphone conversation or hardware behaviour. `npm run test:live` sends a synthetic fixture to the configured device-extraction provider.
+`npm test` covers the server and lesson contracts; `npm run build` checks the frontend. The automated suite does not cover the browser voice session or hardware behaviour. Test the voice path manually with a consented session and a Bolna agent that has the standard ElevenLabs voice available. Optional provider checks, `npm run test:learning-live` and `npm run test:live`, require credentials and make real provider requests. `npm run test:live` sends a synthetic fixture to the configured device-extraction provider.
 
 Board names belong to their owners. Pinlight is not affiliated with Raspberry Pi Ltd or Arduino.
+
+### Bolna step narration rollout
+
+Deploy the updated API (which supplies server-owned `voice_opening`) and frontend together, then run `npm run configure:learning-voice` using the same Bolna account. This updates only the dedicated learning agent welcome message so it reads the current step at call start. The old Tracepoint agent is preserved. Both narration and conversation use the same consented Bolna WebRTC call; the active learning desk no longer uses browser speech synthesis. Confirm a connected call and nonzero duration in Bolna before claiming successful ElevenLabs or Sarvam audio.

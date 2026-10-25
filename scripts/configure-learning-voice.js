@@ -9,6 +9,7 @@ try{
  if(agent&&agent.agent_name!==LEARNING_AGENT_NAME)throw Error('Refusing to overwrite an unrelated voice agent.');
  let id=agent?.id;
  if(!id){const created=await api('/v2/agent',{method:'POST',body:JSON.stringify(buildLearningAgentConfig())});id=created.agent_id;if(!/^[a-f0-9-]{36}$/i.test(id||''))throw Error('Bolna returned an invalid agent ID.');}
+ if(agent)await api(`/v2/agent/${id}`,{method:'PATCH',body:JSON.stringify({agent_config:{agent_welcome_message:'{{voice_opening}}'}})});
  const env=await readFile('.env','utf8');
  await writeFile('.env',/^BOLNA_LEARNING_AGENT_ID=/m.test(env)?env.replace(/^BOLNA_LEARNING_AGENT_ID=.*$/m,`BOLNA_LEARNING_AGENT_ID=${id}`):`${env.trimEnd()}\nBOLNA_LEARNING_AGENT_ID=${id}\n`);
  const details=await api(`/v2/agent/${id}`);
