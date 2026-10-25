@@ -1,0 +1,95 @@
+/* Learning desk: a focused canvas, contextual guide, and optional tutor. */
+.workspace-shell>.site-header{min-height:72px;padding-block:12px}
+.workspace-shell>.site-footer{margin-top:12px;padding-block:20px}
+.studio{padding:20px clamp(14px,2vw,32px) 12px;color:#23443c}
+.desk-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}
+.desk-heading h1{font:600 25px Manrope,sans-serif;letter-spacing:-.7px;margin:0 0 5px}
+.desk-heading p{font-size:13px;color:#748175;margin:0}
+.desk-tutor-toggle{display:flex;align-items:center;gap:8px;padding:11px 16px;background:#193e37;color:white;border-radius:8px;font-size:12px;white-space:nowrap}
+.studio .studio-bar{gap:12px;padding:0 0 16px;border:0;background:transparent;align-items:center}
+.studio .studio-boards{padding:4px;background:#edf0e6;border:1px solid #dce2d3;border-radius:9px;gap:4px}
+.studio .studio-boards button{border-radius:6px;padding:10px 13px;font-size:12px}
+.studio .studio-modes{margin-left:0;gap:2px}
+.studio .studio-modes button{padding:9px 10px;font-size:12px;border-radius:6px}
+.studio .studio-modes button b{display:none}
+.studio .studio-status{margin-left:auto;font-size:11px;color:#7b8676}
+.studio .studio-grid{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:14px;min-height:0;align-items:stretch}
+.studio.has-tutor .studio-grid{grid-template-columns:280px minmax(0,1fr) 300px}
+.studio .studio-stage,.studio .studio-trail,.studio .studio-chat{height:clamp(650px,calc(100dvh - 225px),900px);min-height:0;min-width:0;width:auto;border:1px solid #dce2d4;border-radius:12px;overflow:hidden;background:#fcfcf8;grid-column:auto;order:initial}
+.studio .studio-stage{display:flex;flex-direction:column;background:#f4f5ee}
+.studio .studio-trail{background:#fafbf5}
+.studio .studio-chat[hidden]{display:none!important}
+.studio .trail-scroll{overflow:auto;padding:18px;min-height:0}
+.studio .inspector-tabs{padding:8px;gap:5px;background:#f0f2e8;border-bottom:1px solid #dce2d4}
+.studio .inspector-tabs button{padding:11px 8px;border-radius:6px;font-size:12px}
+.studio .inspector-tabs button[aria-pressed=true]{background:#fff;box-shadow:0 1px 4px #193e3710;color:#193e37}
+.studio .trail-body{font-size:13px;line-height:1.8}
+.studio .trail-list>li>button{padding:12px 9px;font-size:12px}
+.studio .trail-list>li.is-current{background:#fff;border-radius:8px;box-shadow:none}
+.studio .lesson-navigation .button{padding:11px 13px;font-size:12px}
+.studio .scene-topline{min-height:39px;background:#fafbf6}
+.studio .code-toggle{display:flex;align-items:center;gap:6px}
+.studio .project-stage-scroll,.studio .device-workspace{overflow:auto;min-height:0;max-height:none;flex:1}
+.studio .device-workspace{padding:22px}
+.studio button:disabled{cursor:default}
+.studio :is(button,a,input,select,summary):focus-visible{outline:2px solid #628b70;outline-offset:3px}
+.studio .chat-head{padding:17px;flex-wrap:wrap;gap:10px;background:#fafbf6}
+.studio .chat-head>div:first-child{flex:1}
+.studio .chat-head small{line-height:1.6;font-size:11px;margin-top:4px}
+.studio .tutor-close{background:transparent;padding:3px;display:flex}
+.studio .chat-switcher{width:100%}
+.studio .chat-thread{padding:14px;min-height:100px}
+.studio .chat-empty p{font-size:13px;line-height:1.8;margin-bottom:18px}
+.studio .chat-empty button{background:white;border:1px solid #dce2d4;border-radius:8px;padding:10px 12px;text-align:left;margin-bottom:8px}
+.studio .wispr-input{padding:12px;border-top:1px solid #e1e6d9;background:#fafbf6}
+.studio .wispr-field input{font-size:12px;min-height:42px}
+.studio .wispr-field .button{padding:10px;font-size:12px}
+.studio .wispr-bar{font-size:11px;line-height:1.6}
+.studio .wispr-bar>span{color:#7b8676}
+.studio .wispr-guide{margin-top:9px;font-size:11px}
+.studio .wispr-guide>div{max-height:220px;overflow:auto}
+.part-navigator{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid #dce2d4;background:#fafbf6;flex-shrink:0}
+.browse-parts{display:flex;align-items:center;gap:10px;background:transparent;text-align:left;font-size:12px;padding:0}
+.browse-parts small{display:block;font-size:10px;color:#7d8976;margin-top:3px}
+.part-pagination{display:flex;align-items:center;gap:6px;font-size:12px}
+.part-pagination>span{margin-right:8px}.part-pagination span span{color:#8b9484}
+.part-pagination button{display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:#edf1e5;border-radius:6px}
+.part-browser{position:absolute;top:66px;left:12px;right:12px;z-index:12;padding:16px;background:#fffef9;border:1px solid #d4dfca;border-radius:10px;box-shadow:0 16px 40px #193e3726;max-height:calc(100% - 80px);overflow:auto}
+.part-search{display:flex;align-items:center;gap:8px;padding:0 10px;border:1px solid #ccd8c4;border-radius:7px}
+.part-search input{min-width:0;width:100%;border:0;background:transparent;padding:12px 0;font-size:12px}.part-search button{background:transparent;display:flex}
+.part-browser .device-filter{align-items:center}.device-filter>span{margin-left:auto;font-size:10px;color:#7b8676}
+.part-browser-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.part-browser-grid>button{display:flex;align-items:center;gap:10px;padding:12px;text-align:left;border:1px solid #e1e6d9;border-radius:7px;background:#fafbf6;min-width:0}
+.part-browser-grid>button[aria-pressed=true]{background:#e8efdd;border-color:#9fb58f}
+.part-browser-grid>button>span{flex:1;min-width:0}.part-browser-grid strong,.part-browser-grid small{display:block}.part-browser-grid strong{font-size:12px}.part-browser-grid small{font-size:10px;color:#7b8676;line-height:1.6;margin-top:3px}
+.part-search-empty{padding:20px;font-size:13px}.part-search-empty button{padding:8px;border-radius:5px;background:#e6eddc}
+.part-heading{display:flex;justify-content:space-between;align-items:center;gap:10px}.part-heading .eyebrow{font-size:9px;line-height:1.7}.part-heading .eyebrow span{color:#b1bba6;padding:0 6px}
+.studio .part-heading h2{font:500 28px Manrope,sans-serif;letter-spacing:-.7px;margin:8px 0 0}
+.part-view-badge{display:flex;align-items:center;gap:6px;font-size:10px;border:1px solid #d9e1d1;border-radius:20px;padding:7px 10px;color:#6b8062}
+.studio .device-detail>.part-description{font-size:12px;line-height:1.75;color:#6c7d6a;margin:10px 0 18px}
+.studio .device-detail .project-hardware-canvas{height:350px}
+.studio .assembly-tools{background:#f6f8ef;padding:9px}.studio .assembly-tools button{background:#e9efdf;border-radius:6px}.studio .assembly-tools select{background:transparent;border:1px solid #d8e0ce;border-radius:5px;padding:7px;font-size:11px}
+.studio .assembly-selection{background:#eef3e5;border-color:#dde5d3;padding:11px}.studio .assembly-selection p{font-size:11px}
+.part-pin-reference{border-bottom:1px solid #dce2d4;margin:0 0 18px;padding:13px 0}
+.part-pin-reference summary,.part-model-code summary,.activity-map-disclosure summary{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;list-style:none}
+.part-pin-reference summary>span{margin-left:auto;color:#8b9484;font-size:10px}
+.studio .device-experiment{padding:18px;background:#edf2e3;border:1px solid #dce6ce;border-radius:9px}
+.part-reading-control{display:flex;gap:24px;align-items:center}.part-reading-control label{flex:1}.part-reading-control label strong{float:right;font-weight:500}.part-reading-control output{flex-direction:column;gap:3px;min-width:110px}
+.part-model-code{margin-top:18px}.part-model-code>summary{padding:8px 0;color:#718166}
+.part-lesson-heading{display:flex;align-items:center;justify-content:space-between;font-size:10px;color:#7c8972}.part-lesson-heading .eyebrow{font-size:9px}
+.part-progress{display:flex;gap:5px;margin:15px 0 20px}.part-progress span{height:3px;flex:1;background:#e2e8d8;border-radius:3px}.part-progress span.is-done{background:#476b50}.part-progress span.is-current{background:#b4c78b}
+.studio .part-activity{margin-top:22px;padding:18px;border:1px solid #dce5ce;background:#f0f4e7;border-radius:9px}
+.studio .part-view-tabs+.trail-scroll>.part-activity:first-child{margin:0;padding:0;border:0;background:transparent}
+.studio .part-activity h3{font-size:17px;line-height:1.4;margin:10px 0}.studio .part-activity>p{font-size:12px;line-height:1.8}
+.studio .activity-board{margin:18px 0;font-size:11px}.studio .activity-board select{padding:10px;border-radius:6px;background:#fff;font-size:12px}
+.studio .activity-monitor{background:#fff;border-color:#dce2d4;padding:14px;border-radius:9px}
+.activity-reference{padding:0 0 8px;font-size:12px}.activity-reference .activity-tabs{display:flex;gap:6px;border-bottom:1px solid #dce2d4;padding-bottom:10px;margin-bottom:16px}.activity-reference .activity-tabs button{display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:6px;background:transparent}.activity-reference .activity-tabs button[aria-pressed=true]{background:#193e37;color:white}
+.activity-reference .activity-wire-preview{display:flex;align-items:center;gap:12px;font-size:12px;margin:12px 0}.activity-reference .activity-map-disclosure{margin:12px 0}.activity-reference .activity-signal-map{max-width:360px;margin-inline:auto}
+.activity-reference .activity-wires{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:0;list-style:none}.activity-reference .activity-wires button{width:100%;display:flex;gap:9px;text-align:left;padding:10px;border:1px solid #dce3d3;border-radius:6px;background:#fafcf5}.activity-reference .activity-wires button[aria-pressed=true]{background:#e7efdb;border-color:#a8bc96}.activity-reference .activity-wires button>b{font-size:10px;color:#80916f}.activity-reference .activity-wires button>span{display:flex;flex-direction:column;gap:5px;font-size:11px}.activity-reference .activity-wires button>span>span{display:flex;gap:5px;align-items:center}.activity-reference .activity-wire-selection{display:flex;align-items:center;gap:7px;font-size:11px}.activity-reference .reference-code pre{font-size:12px;max-height:430px}.activity-reference .project-note,.activity-reference .activity-setup{line-height:1.8;font-size:12px}.activity-reference>details{padding:10px 0}.activity-reference summary{cursor:pointer}
+@media(max-width:1399px){.studio.has-tutor .studio-grid{grid-template-columns:260px minmax(0,1fr) 280px}.studio .studio-modes{order:3;width:100%}.studio .studio-status{margin-left:auto}.studio .device-workspace{padding:16px}.part-reading-control{gap:12px}}
+@media(max-width:1199px){.studio.has-tutor .studio-grid,.studio .studio-grid{grid-template-columns:minmax(0,1fr) 300px}.studio .studio-chat{position:fixed;inset:16px 16px 16px auto;z-index:61;width:min(390px,calc(100vw - 32px));height:auto;max-height:none;box-shadow:0 20px 80px #142c3a40}.tutor-backdrop{position:fixed;inset:0;background:#183c354d;backdrop-filter:blur(3px);z-index:60}.studio .studio-stage{overflow:hidden}.studio .studio-trail .trail-scroll{overflow:auto}}
+@media(max-width:850px){.studio.has-tutor .studio-grid,.studio .studio-grid{grid-template-columns:1fr}.studio .studio-stage{height:auto;min-height:420px;order:1}.studio .studio-trail{height:auto;max-height:none;order:2}.studio .trail-scroll,.studio .device-workspace,.studio .project-stage-scroll{overflow:visible}.studio .studio-stage>.scene-viewport{height:440px;min-height:440px;flex:auto}.studio .studio-status{display:none}.studio .studio-boards{width:100%}.studio .studio-boards button{flex:1;padding:10px 8px}.studio .studio-modes{width:100%;display:grid;grid-template-columns:repeat(4,1fr)}.studio .studio-modes button{justify-content:center;font-size:11px}.studio .device-detail .project-hardware-canvas{height:330px}.studio .part-view-tabs{position:static}.part-browser{max-height:440px}.studio .part-activity{margin-top:20px}.studio .device-workspace{padding:18px}}
+@media(max-width:480px){.studio{padding:18px 12px 10px}.desk-heading{margin-bottom:16px}.desk-heading h1{font-size:22px}.desk-heading p{font-size:11px;max-width:180px;line-height:1.6}.desk-tutor-toggle{padding:10px;font-size:11px}.studio .studio-boards{gap:2px}.studio .studio-boards button{font-size:10px;padding:9px 5px}.studio .studio-boards button svg{display:none}.studio .studio-pdf-link{width:100%;justify-content:center;padding:6px 0 2px}.studio .studio-modes button{flex-direction:column;gap:5px;padding:9px 4px;font-size:10px}.studio .device-workspace{padding:14px}.part-browser-grid{grid-template-columns:1fr}.part-view-badge{display:none}.part-reading-control{display:block}.activity-reference .activity-wires{grid-template-columns:1fr}.studio .studio-stage>.scene-viewport{height:340px;min-height:340px}.studio .device-detail .project-hardware-canvas{height:290px}}
+@media(prefers-reduced-motion:reduce){.studio *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+
+.studio .device-trail .activity-reference-host{margin-top:24px;border-top:1px solid #dce2d4;padding-top:18px}

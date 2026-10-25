@@ -1,3 +1,4 @@
+import {createPortal} from 'react-dom';
 import {useEffect,useMemo,useState} from 'react';
 import {deviceActivity,activityReading} from '../../shared/learning/device-activities.js';
 import ReferenceCode from '../components/ReferenceCode.jsx';
@@ -28,10 +29,10 @@ function WiringPreview({activity,device,selected,onSelect}){
  </svg><small>Signal map · select a wire · numbers match the list, not physical pin positions</small></div>;
 }
 
-export default function DeviceActivity({device,initialBoard,onBoardChange,active,onStart,action,value,onValue}){
+export default function DeviceActivity({device,initialBoard,onBoardChange,active,onStart,action,value,onValue,detailsHost}){
  const board=initialBoard;const setBoard=onBoardChange;const [running,setRunning]=useState(true),[samples,setSamples]=useState([]),[selected,setSelected]=useState(0),[tab,setTab]=useState('connections');
  const activity=useMemo(()=>deviceActivity(device.id,board,value),[device.id,board,value]);
- const reading=activityReading(device.id,board,value),e=device.experiment;
+ const reading=activityReading(device.id,board,value),e={...device.experiment,label:device.id==='mcp3008'?'Input voltage':device.experiment.label.replace(/^Example |^Stationary example |^Latched example /,'')};
  useEffect(()=>{setSamples([]);setSelected(0);setTab('connections');},[device.id,board]);
  useEffect(()=>{
   if(!running||!active)return;
@@ -40,19 +41,22 @@ export default function DeviceActivity({device,initialBoard,onBoardChange,active
  },[value,running,active,device.id,board]);
  useEffect(()=>{if(!action)return;if(action.type==='run')setRunning(action.value);if(action.type==='tab')setTab(action.tab==='code'?'code':'connections');if(action.type==='activity'&&action.operation==='connections')setTab('connections');if(action.type==='activity'&&action.operation==='reset'){onValue(e.value);setSamples([]);setRunning(true);}},[action]);
  const points=samples.map((v,i)=>`${i*240/39},${54-(v-e.min)/(e.max-e.min)*46}`).join(' '),wire=activity.wires[Math.min(selected,activity.wires.length-1)];
+ const reference=<section className="activity-reference" aria-label="Activity reference">
+  <div className="activity-tabs" role="group" aria-label="Activity details">{['connections','code'].map(t=><button aria-pressed={tab===t} key={t} onClick={()=>setTab(t)}><Icon name={t==='code'?'code':'layers'} size={14}/>{t==='code'?'Code':'Connections'}</button>)}</div>
+  {tab==='connections'?<><div className="activity-wire-preview"><span>{board==='raspberry-pi-5'?'Pi 5 header':'Uno header'}</span><Icon name="arrow" size={18}/><span>{device.name}</span></div><details className="activity-map-disclosure"><summary>View signal map <Icon name="down" size={14}/></summary><WiringPreview activity={activity} device={device} selected={selected} onSelect={setSelected}/></details><p className="activity-wire-selection"><strong>{wire.from}</strong><Icon name="arrow" size={14}/>{wire.to}</p><ol className="activity-wires">{activity.wires.map((w,i)=><li key={`${w.from}-${w.to}`}><button aria-pressed={selected===i} onClick={()=>setSelected(i)}><b>{i+1}</b><span><strong>{w.from}</strong><span><Icon name="arrow" size={12}/>{w.to}</span></span></button></li>)}</ol><details><summary>Parts you need</summary><ul>{activity.parts.map(p=><li key={p}>{p}</li>)}</ul></details></>:<><p className="activity-setup">{activity.setup}</p><ReferenceCode title={board==='raspberry-pi-5'?'Python · Raspberry Pi 5':'C++ · Arduino Uno'} filename={`${device.id}-${board==='raspberry-pi-5'?'pi.py':'uno.ino'}`} code={activity.code} description="Runs on the selected board, not in this browser. Controls above change the simulation; for resistor changes, adjust the physical circuit with power off."/></>}
+  <p className="project-note">{activity.note}</p><a href={activity.source} target="_blank" rel="noreferrer" className="lesson-source">Check component datasheet <Icon name="diagonal" size={14}/></a>
+ </section>;
  if(!active)return <section className="part-activity"><div className="eyebrow">THEN MAKE SOMETHING</div><h3>{activity.title}</h3><p>{activity.goal}</p><button className="button button-dark" onClick={onStart}>Try activity <Icon name="arrow" size={16}/></button><p className="project-note">Connect this part to a 3D Raspberry Pi or Arduino Uno, then explore the controls and code.</p></section>;
  return <section className="part-activity" aria-label={`${device.name} board activity`}>
-  <div className="eyebrow"><Icon name="play" size={14}/> TRY AN ACTIVITY</div><h3>{activity.title}</h3><p>{activity.goal}</p>
-  <label className="activity-board">Connect to<select aria-label="Activity board" value={board} onChange={event=>setBoard(event.target.value)}><option value="raspberry-pi-5">Raspberry Pi 5</option><option value="arduino-uno-r3">Arduino Uno R3</option></select></label>
+  <div className="eyebrow"><Icon name="play" size={14}/> YOUR ACTIVITY</div><h3>{activity.title}</h3><p>{activity.goal}</p>
+  <label className="activity-board">Host board<select aria-label="Activity board" value={board} onChange={event=>setBoard(event.target.value)}><option value="raspberry-pi-5">Raspberry Pi 5</option><option value="arduino-uno-r3">Arduino Uno R3</option></select></label>
   <div className="activity-monitor"><div className="activity-monitor-heading"><span><i className={running?'is-running':''}/>{running?'Live simulation':'Simulation paused'}</span><button onClick={()=>setRunning(!running)} aria-label={running?'Pause activity':'Run activity'}><Icon name={running?'pause':'play'} size={16}/></button></div>
    <SensorPreview device={device} value={value} running={running}/><output aria-live="off"><strong>{reading.value}</strong><span>{reading.unit}</span></output>
    {device.id==='74hc595'?<div className="activity-leds" aria-label="Eight simulated LEDs">{reading.value.split('').map((bit,i)=><button key={i} aria-label={`Toggle LED Q${String.fromCharCode(72-i)}`} aria-pressed={bit==='1'} disabled={!running} onClick={()=>onValue(value^(1<<(7-i)))}><i className={bit==='1'?'lit':''}/><small>Q{String.fromCharCode(72-i)}</small></button>)}</div>:<svg className="activity-plot" viewBox="0 0 240 60" role="img" aria-label={`Recent simulated ${e.label.toLowerCase()} history`}><path d="M0 55H240M0 30H240M0 5H240" stroke="#cbd9bf" fill="none"/><polyline points={points} stroke="#315d43" strokeWidth="2" fill="none"/></svg>}
    <label>{e.label}<strong>{value} {e.unit}</strong><input aria-label={`Activity ${e.label.toLowerCase()}`} type="range" min={e.min} max={e.max} step={e.step} value={value} disabled={!running} onChange={event=>onValue(Number(event.target.value))}/></label><p>{reading.detail}</p>
    <button className="activity-reset" onClick={()=>{onValue(e.value);setSamples([]);setRunning(true);}}><Icon name="rotate" size={14}/> Reset activity</button><small>Simulated inputs · no physical hardware connected</small>
   </div>
-  <div className="activity-tabs" role="group" aria-label="Activity details">{['connections','code'].map(t=><button aria-pressed={tab===t} key={t} onClick={()=>setTab(t)}><Icon name={t==='code'?'code':'layers'} size={14}/>{t==='code'?'Code':'Connections'}</button>)}</div>
-  {tab==='connections'?<><div className="activity-wire-preview"><span>{board==='raspberry-pi-5'?'Pi 5 header':'Uno header'}</span><Icon name="arrow" size={18}/><span>{device.name}</span></div><WiringPreview activity={activity} device={device} selected={selected} onSelect={setSelected}/><p className="activity-wire-selection"><strong>{wire.from}</strong><Icon name="arrow" size={14}/>{wire.to}</p><ol className="activity-wires">{activity.wires.map((w,i)=><li key={`${w.from}-${w.to}`}><button aria-pressed={selected===i} onClick={()=>setSelected(i)}><b>{i+1}</b><span><strong>{w.from}</strong><span><Icon name="arrow" size={12}/>{w.to}</span></span></button></li>)}</ol><details><summary>Parts you need</summary><ul>{activity.parts.map(p=><li key={p}>{p}</li>)}</ul></details></>:<><p className="activity-setup">{activity.setup}</p><ReferenceCode title={board==='raspberry-pi-5'?'Python · Raspberry Pi 5':'C++ · Arduino Uno'} filename={`${device.id}-${board==='raspberry-pi-5'?'pi.py':'uno.ino'}`} code={activity.code} description="Runs on the selected board, not in this browser. Controls above change the simulation; for resistor changes, adjust the physical circuit with power off."/></>}
-  <p className="project-note">{activity.note}</p><a href={activity.source} target="_blank" rel="noreferrer" className="lesson-source">Check component datasheet <Icon name="diagonal" size={14}/></a>
+  {detailsHost&&createPortal(reference,detailsHost)}
  </section>;
 }
 

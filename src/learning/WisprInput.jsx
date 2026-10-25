@@ -5,7 +5,8 @@ import {useEffect,useRef,useState} from 'react';
 // Auto-send treats a burst insertion (paste, or many characters arriving faster than anyone types)
 // followed by a short quiet pause as a finished dictation. Typing by hand never auto-sends.
 const SETTLE_MS=1100,BURST_GAP_MS=35,BURST_CHARS=6;
-export default function WisprInput({id,value,onChange,onSend,disabled,busy,placeholder,dictating=false,onWisprMode}){
+export default function WisprInput({id,value,onChange,onSend,disabled,busy,placeholder,dictating=false,onWisprMode,onActivate}){
+ const activate=useRef(onActivate);activate.current=onActivate;
  const input=useRef(null),timer=useRef(null),burst=useRef({chars:0,at:0}),lastSent=useRef({text:'',at:0});
  const [auto,setAuto]=useState(()=>{try{return localStorage.getItem('pinlight-wispr-auto')!=='off';}catch{return true;}});
  const [pending,setPending]=useState(false);
@@ -14,7 +15,7 @@ export default function WisprInput({id,value,onChange,onSend,disabled,busy,place
  useEffect(()=>()=>clearTimeout(timer.current),[]);
  // Pressing a common Wispr shortcut key moves focus here first, so the dictation lands in the chat,
  // unless you are already typing in another field.
- useEffect(()=>{if(!auto)return;const onKey=e=>{if(!['Control','Meta','CapsLock','Alt'].includes(e.key))return;const a=document.activeElement;if(a&&a!==input.current&&a.matches('input,textarea,select,[contenteditable="true"]'))return;input.current?.focus({preventScroll:true});};addEventListener('keydown',onKey);return()=>removeEventListener('keydown',onKey);},[auto]);
+ useEffect(()=>{if(!auto)return;const onKey=e=>{if(!['Control','Meta','CapsLock','Alt'].includes(e.key))return;const a=document.activeElement;if(a&&a!==input.current&&a.matches('input,textarea,select,[contenteditable="true"]'))return;activate.current?.();requestAnimationFrame(()=>input.current?.focus({preventScroll:true}));};addEventListener('keydown',onKey);return()=>removeEventListener('keydown',onKey);},[auto]);
  const send=text=>{cancel();const t=text.trim(),now=Date.now();if(!t||disabled||busy)return;if(t===lastSent.current.text&&now-lastSent.current.at<700)return;lastSent.current={text:t,at:now};Promise.resolve(onSend(t)).finally(()=>input.current?.focus({preventScroll:true}));};
  const onInput=e=>{
   const next=e.target.value,added=next.length-value.length,type=e.nativeEvent.inputType||'',now=performance.now();onChange(next);
