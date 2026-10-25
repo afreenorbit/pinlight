@@ -7,9 +7,10 @@ import {boardAnchor,cameraSignals,roverSignals} from '../../shared/learning/conn
 import {getPackage} from '../../shared/learning/catalog.js';
 import Icon from '../components/Icon.jsx';
 import {createBoardModel} from './model.js';
+import {deviceCircuit} from '../../shared/learning/device-circuits.js';
 
 // Detailed illustrative assemblies. Geometry is procedural, not manufacturer CAD.
-export default function ProjectHardwareScene({kind,boardId,pose,viewCommand,device,selectedPart,onPartSelect}){
+export default function ProjectHardwareScene({kind,boardId,pose,viewCommand,device,activity=false,selectedPart,onPartSelect}){
  const host=useRef(null),viewer=useRef(null),motion=useRef(pose),partCallback=useRef(onPartSelect),[failed,setFailed]=useState(false),[selection,setSelection]=useState(null),[partOptions,setPartOptions]=useState([]);motion.current=pose;partCallback.current=onPartSelect;
  useEffect(()=>{
   const node=host.current;let renderer,frame,observer,controls,environment,removePicking;const scene=new THREE.Scene();scene.background=new THREE.Color('#e9eee2');
@@ -27,17 +28,35 @@ export default function ProjectHardwareScene({kind,boardId,pose,viewCommand,devi
    const wire=(p,points,color,r=.035)=>{const curve=new THREE.CatmullRomCurve3(points.map(a=>new THREE.Vector3(...a)));return mesh(p,new THREE.TubeGeometry(curve,28,r,8,false),color,0,0,0);};
    const ground=mesh(scene,new THREE.PlaneGeometry(100,100),'#e4eadc',0,-.05,0);ground.rotation.x=-Math.PI/2;
    const grid=new THREE.GridHelper(32,32,'#c1cdb6','#d3ddc9');grid.position.y=-.035;scene.add(grid);
-   const assembly=new THREE.Group();scene.add(assembly);const wheels=[];
+   const assembly=new THREE.Group();scene.add(assembly);const wheels=[],activityLeds=[];
    const describe=(o,id,label,detail)=>{o.userData.part={id,label,detail};return o;};
    const route=(points,color,label,detail)=>describe(wire(assembly,points,color,.026),label,label,detail);
    const transformed=(board,name)=>board.root.localToWorld(new THREE.Vector3(...boardAnchor(boardId,name))).toArray();
    if(kind==='device'&&device){
-    const body=new THREE.Group();assembly.add(body);describe(body,'body',device.name,device.summary);
-    const pin=(i,x,y,z)=>{const g=new THREE.Group();body.add(g);describe(g,`pin-${i+1}`,`${device.category==='Chip'?'Pin '+(i+1)+' · ':''}${device.pins[i]}`,device.category==='Chip'?'Pin name for the selected DIP package. Verify notch, top view and exact variant in the linked datasheet.':'Illustrative function pad. Check the physical header order and voltage requirements of your exact sensor breakout.');box(g,.16,.65,.14,'#b9c0b8',x,y,z,.8);cyl(g,.11,.035,'#c7b477',x,y+.34,z,.8);};
+    const body=new THREE.Group();assembly.add(body);describe(body,'body',device.name,device.summary);const deviceContacts=new Map();
+    const pin=(i,x,y,z)=>{const g=new THREE.Group();body.add(g);deviceContacts.set(String(i+1),new THREE.Vector3(x,y-.3,z));describe(g,`pin-${i+1}`,`${device.category==='Chip'?'Pin '+(i+1)+' · ':''}${device.pins[i]}`,device.category==='Chip'?'Pin name for the selected DIP package. Verify notch, top view and exact variant in the linked datasheet.':'Illustrative function pad. Check the physical header order and voltage requirements of your exact sensor breakout.');box(g,.16,.65,.14,'#b9c0b8',x,y,z,.8);cyl(g,.11,.035,'#c7b477',x,y+.34,z,.8);};
     if(device.shape.startsWith('dip')){const count=device.pins.length,half=count/2,length=half*.46+.65;box(body,1.8,.55,length,'#252c2a',0,.85,0);box(body,1.66,.06,length-.18,'#343c35',0,1.15,0);const notch=cyl(body,.24,.07,'#121d17',0,1.2,-length/2+.05);cyl(body,.075,.05,'#a4ac99',-.56,1.21,-length/2+.3);for(let i=0;i<count;i++){const left=i<half,z=(left?i:count-1-i)*.46-(half-1)*.23;pin(i,left?-1.1:1.1,.45,z);box(body,.4,.1,.14,'#afb7ae',left?-1:1,.8,z,.8);}
     }else if(device.shape==='to92'){const sensor=cyl(body,.65,.85,'#2d3530',0,1.5,0,.05);box(body,1.1,.8,.35,'#2a322c',0,1.5,.3);device.pins.forEach((p,i)=>pin(i,(i-1)*.4,.6,.1));
     }else if(device.shape==='ultrasonic'){box(body,4,.15,1.8,'#397585',0,.9,0);for(const x of [-1,1]){cyl(body,.65,.8,'#bec8c5',x,1.38,0,.8);cyl(body,.51,.82,'#37483d',x,1.4,0,.7);cyl(body,.43,.83,'#7d8f80',x,1.41,0,.6);}device.pins.forEach((p,i)=>pin(i,(i-1.5)*.5,.25,.75));
     }else{box(body,3,.13,2.4,'#387184',0,.65,0,.1);for(const x of [-1.25,1.25])for(const z of [-.95,.95]){cyl(body,.12,.025,'#c2ad65',x,.73,z,.8);cyl(body,.065,.03,'#223d30',x,.75,z,.1);}box(body,1.05,.25,.95,device.shape==='optical'?'#27322d':'#a9b7ac',0,.88,-.15,.65);if(device.shape==='optical')for(const x of [-.27,.27])box(body,.27,.07,.36,'#18363c',x,1.05,-.15,.6);else if(device.shape==='vented'){for(let i=0;i<4;i++)box(body,.065,.02,.65,'#3b4a3e',-.3+i*.2,1.02,-.15);}else cyl(body,.08,.03,'#233c32',.28,1.02,-.3);for(let i=0;i<7;i++)box(body,.16,.06,.1,'#b4b79e',-.8+i*.22,.76,.55,.5);device.pins.forEach((p,i)=>pin(i,(i-(device.pins.length-1)/2)*.35,.27,1.03));}
+    if(activity){
+     const circuit=deviceCircuit(device.id,boardId),contacts=new Map();body.position.set(3,.12,-1.8);body.scale.setScalar(.7);
+     const board=createBoardModel(assembly,boardId);board.root.scale.setScalar(.55);board.root.position.set(-3.4,.18,-1.5);
+     describe(board.root,'host-board',getPackage(boardId).board.name,'Select a component or trace a cable to a named physical header.');
+     circuit.nodes.forEach((node,index)=>{
+      const g=new THREE.Group();assembly.add(g);g.position.set(-3.5+(index%3)*3.5,.18,3+Math.floor(index/3)*2.4);describe(g,node.id,node.label,'Supporting circuit component. Select its terminals or connected wires to inspect each signal.');
+      const positions=new Map(),count=node.pins.length;
+      if(node.kind==='resistor'){const r=cyl(g,.15,.9,'#c2a276',0,.35,0,.1);r.rotation.z=Math.PI/2;for(const x of [-.22,0,.2]){const stripe=cyl(g,.158,.06,x===0?'#3a3029':'#825d3b',x,.35,0,.1);stripe.rotation.z=Math.PI/2;}positions.set('a',new THREE.Vector3(-.7,.35,0));positions.set('b',new THREE.Vector3(.7,.35,0));}
+      else if(node.kind==='capacitor'){cyl(g,.22,.5,'#527a8a',0,.4,0,.3);positions.set('+',new THREE.Vector3(-.16,.15,0));positions.set('−',new THREE.Vector3(.16,.15,0));}
+      else{const length=Math.max(1.1,Math.ceil(count/2)*.23+.3);box(g,1.5,.14,length,node.kind==='dip'?'#283a30':'#3f7161',0,.35,0);node.pins.forEach((pin,i)=>{const half=Math.ceil(count/2),left=i<half;positions.set(String(pin),new THREE.Vector3(left?-.85:.85,.32,(left?i:count-1-i)*.23-(half-1)*.115));});}
+      for(const [pin,pos] of positions){const terminal=cyl(g,.065,.11,'#cbb77a',pos.x,pos.y,pos.z,.8);describe(terminal,`${node.id}:${pin}`,`${node.label} · ${pin}`,'Named terminal in the wiring recipe. Package shapes and breakout pad spacing are illustrative.');contacts.set(`${node.id}:${pin}`,{group:g,position:pos});}
+      if(node.kind==='leds')for(let i=0;i<8;i++){const led=cyl(g,.09,.16,'#9a7543',-.62+i*.18,.55,0);led.material=led.material.clone();activityLeds.push(led);}
+     });
+     assembly.updateMatrixWorld(true);
+     const endpoint=key=>{const split=key.indexOf(':'),owner=key.slice(0,split),pin=key.slice(split+1);if(owner==='board')return transformed(board,pin);if(owner==='part'){const position=deviceContacts.get(pin);if(!position)throw Error(`Missing device terminal ${key}`);return body.localToWorld(position.clone()).toArray();}const c=contacts.get(key);if(!c)throw Error(`Missing auxiliary terminal ${key}`);return c.group.localToWorld(c.position.clone()).toArray();};
+     circuit.nets.forEach((net,i)=>{const start=endpoint(net.from),end=endpoint(net.to),height=1.2+(i%7)*.14;describe(wire(assembly,[start,[start[0],height,start[2]],[end[0],height,end[2]],end],/ground|GND|V−/i.test(net.label)?'#344137':/VCC|supply|VREF|3.3 V logic|5 V logic/i.test(net.label)?'#bd684c':['#bd9c50','#62938e','#8d74a4'][i%3],.022),`net-${i}`,net.label,`${net.from} → ${net.to}. Follows the selected board's activity wiring and hardware code.`);});
+     const bounds=new THREE.Box3().setFromObject(assembly),center=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3());controls.target.copy(center);camera.position.copy(center).add(new THREE.Vector3(8,10,12).multiplyScalar(Math.max(1,size.z/11)));controls.maxDistance=55;viewer.current.home.copy(camera.position);controls.update();
+    }
    }else if(kind==='camera'){
     const board=createBoardModel(assembly,boardId);board.root.scale.setScalar(.65);board.root.position.set(-2.5,.25,0);
     const cam=new THREE.Group();assembly.add(cam);cam.position.set(3.7,0,0);describe(cam,'camera-module','Camera module',boardId==='raspberry-pi-5'?'The ribbon joins this camera connector to CAM/DISP 0 on the Pi.':'A buffered Arducam Mini uses separate SPI and I²C signals. Supply connections must match your exact module.');
@@ -83,12 +102,13 @@ export default function ProjectHardwareScene({kind,boardId,pose,viewCommand,devi
    const onUp=e=>{if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>6)return;const bounds=renderer.domElement.getBoundingClientRect();pointer.set((e.clientX-bounds.left)/bounds.width*2-1,-(e.clientY-bounds.top)/bounds.height*2+1);ray.setFromCamera(pointer,camera);const hit=ray.intersectObjects(assembly.children,true)[0];let owner=hit?.object;while(owner&&!owner.userData.part&&!owner.userData.component)owner=owner.parent;choose(owner);};renderer.domElement.addEventListener('pointerdown',onDown);renderer.domElement.addEventListener('pointerup',onUp);removePicking=()=>{renderer.domElement.removeEventListener('pointerdown',onDown);renderer.domElement.removeEventListener('pointerup',onUp);clearHighlight();};
    const options=new Map();assembly.traverse(o=>{if(o.userData.part)options.set(o.userData.part.id,{id:o.userData.part.id,label:o.userData.part.label});else if(o.userData.component){const c=getPackage(boardId).board.components.find(c=>c.id===o.userData.component);if(c)options.set(c.id,{id:c.id,label:c.name});}});setPartOptions([...options.values()]);
    const resize=()=>{const width=node.clientWidth||600,height=node.clientHeight||290;renderer.setSize(width,height);camera.aspect=width/height;camera.updateProjectionMatrix();};observer=new ResizeObserver(resize);observer.observe(node);resize();
-   const draw=()=>{frame=requestAnimationFrame(draw);const p=motion.current;if(kind==='rover'&&p){assembly.rotation.y=-(p.heading||0);wheels.forEach(w=>w.rotation.z=-p.travel/22);}controls.update();renderer.render(scene,camera);};draw();
+   const draw=()=>{frame=requestAnimationFrame(draw);const p=motion.current;if(kind==='rover'&&p){assembly.rotation.y=-(p.heading||0);wheels.forEach(w=>w.rotation.z=-p.travel/22);}activityLeds.forEach((led,i)=>{led.material.emissive.set((p?.value||0)&(1<<i)?'#efa347':'#000000');led.material.emissiveIntensity=1;});controls.update();renderer.render(scene,camera);};draw();
   }catch{setFailed(true);}
   return()=>{viewer.current=null;removePicking?.();cancelAnimationFrame(frame);observer?.disconnect();controls?.dispose();const geometry=new Set(),materials=new Set(),textures=new Set();scene.traverse(o=>{if(o.geometry)geometry.add(o.geometry);if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{materials.add(m);if(m.map)textures.add(m.map);});});geometry.forEach(g=>g.dispose());textures.forEach(t=>t.dispose());materials.forEach(m=>m.dispose());environment?.dispose();renderer?.dispose();renderer?.domElement.remove();};
- },[kind,boardId,device?.id]);
+ },[kind,boardId,device?.id,activity]);
  useEffect(()=>{if(selectedPart)viewer.current?.selectPart?.(selectedPart);},[selectedPart,device?.id]);
  const adjust=view=>{const v=viewer.current;if(!v)return;const {camera,controls,home}=v;if(view==='home')camera.position.copy(home);else if(view==='top')camera.position.copy(controls.target).add(new THREE.Vector3(0,16,.01));else if(view==='under')camera.position.copy(controls.target).add(new THREE.Vector3(4,-12,8));else if(view==='zoom-in'||view==='zoom-out')camera.position.sub(controls.target).multiplyScalar(view==='zoom-in'?.8:1.25).add(controls.target);controls.update();};
  useEffect(()=>{if(viewCommand)adjust(viewCommand.view);},[viewCommand]);
  return <div className="project-hardware"><div ref={host} className="project-hardware-canvas" role="img" aria-label={`Detailed illustrative ${kind} assembly with ${boardId}`}/><div className="assembly-tools"><select aria-label="Select 3D component" value={selection?.id||''} onChange={e=>viewer.current?.selectPart?.(e.target.value)}><option value="">Select a component…</option>{partOptions.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}</select>{[['home','rotate','Reset view'],['zoom-in','zoomIn','Zoom in'],['zoom-out','zoomOut','Zoom out']].map(([view,icon,label])=><button key={view} aria-label={label} title={label} onClick={()=>adjust(view)}><Icon name={icon} size={17}/></button>)}</div><small>{failed?'3D is unavailable; use the preview and wiring steps below.':'Drag to orbit · scroll to inspect · illustrative assembly, not manufacturer CAD'}</small>{selection&&<div className="assembly-selection" role="status"><Icon name="target" size={17}/><div><strong>{selection.label}</strong><p>{selection.detail}</p></div><button aria-label="Dismiss component details" onClick={()=>setSelection(null)}><Icon name="close" size={16}/></button></div>}</div>;
 }
+

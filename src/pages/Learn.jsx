@@ -11,7 +11,7 @@ import {devices,deviceById,deviceSteps} from '../../shared/learning/devices.js';
 import ProjectLab from '../learning/ProjectLab.jsx';
 import {projectLesson,projectSources} from '../../shared/learning/projects.js';
 import {getPackage,findFocus,localAnswer} from '../../shared/learning/catalog.js';
-import {parseLessonCommand} from '../../shared/learning/commands.js';
+import {parseLessonCommand,splitDictation} from '../../shared/learning/commands.js';
 import {kitParts,kitPartIds,stepHighlight,findKitPart} from '../../shared/learning/kit-parts.js';
 import {useAuth} from '../lib/auth.jsx';
 import {ensureItem,findItem,uploadItemPdf,getItem,listChats,createChat,listMessages,addMessages} from '../lib/desk.js';
@@ -24,6 +24,7 @@ export default function Learn(){
  const {user}=useAuth();
  const [journeyOpen,setJourneyOpen]=useState(false);
  const [library,setLibrary]=useState(false),[deviceId,setDeviceId]=useState('tmp36'),[deviceStep,setDeviceStep]=useState(0);
+ const [deviceAction,setDeviceAction]=useState(null);const handleInputRef=useRef(null);
  const [project,setProject]=useState(null),[projectStep,setProjectStep]=useState(0),[projectAction,setProjectAction]=useState(null);
  const [boardId,setBoardId]=useState('raspberry-pi-5'),[document,setDocument]=useState(null),[documents,setDocuments]=useState([]),[uploading,setUploading]=useState(false),[sourceMessage,setSourceMessage]=useState('');
  const {board,experiments,pins,sources:boardSources}=getPackage(boardId),sources={...boardSources,...projectSources,...Object.fromEntries(devices.map(d=>[`device-${d.id}`,{title:`${d.name} source`,url:d.source}]))},pi=boardId==='raspberry-pi-5';
@@ -97,10 +98,11 @@ export default function Learn(){
  };
  const enableSound=async value=>{const next=value??!sound;try{if(next)await unlockAudio();setSound(next);return next?(handsFree?'Sound is enabled, but muted while voice control listens to avoid feedback.':'Sound on.'):'Sound muted.';}catch{return 'Audio is unavailable in this browser.';}};
  const handleInput=async text=>{
-  if(!/^can you (show|go|simulate|run|open|press|release|zoom)/i.test(text)&&/^(what|why|how|can|does|is|explain|tell me)|क्या|क्यों|समझाओ/i.test(text))return ask(text);
   const a=parseLessonCommand(text,boardId);
   if(a.type==='device'){openLibrary(a.id);return deviceById(a.id)?.summary||'Choose a chip or sensor from the library.';}
   if(library){
+   if(a.type==='board'){setBoardId(a.boardId);return 'Activity host changed. The 3D connections and code now follow the selected board.';}
+   if(['activity','device-value','run','tab'].includes(a.type)){if(a.boardId)setBoardId(a.boardId);if(a.type==='device-value'){const e=deviceById(deviceId).experiment;if(a.value<e.min||a.value>e.max)return 'Choose a value between '+e.min+' and '+e.max+' '+e.unit+'.';}setDeviceAction({...a,nonce:Date.now()});return a.type==='device-value'?'Activity input set to '+a.value+'.':a.type==='tab'?'The requested activity panel is open.':a.type==='run'?(a.value?'Activity simulation running.':'Activity simulation paused.'):'Activity '+(a.operation==='close'?'closed.':'opened. Choose a host board and inspect the 3D connections.');}
    if(a.type==='next'||a.type==='previous'){const next=Math.max(0,Math.min(3,deviceStep+(a.type==='next'?1:-1)));setDeviceStep(next);return deviceSteps(deviceById(deviceId))[next].text;}
    if(a.type==='repeat')return deviceSteps(deviceById(deviceId))[deviceStep].text;
    if(a.type==='tab'){requestAnimationFrame(()=>window.document.querySelector(a.tab==='code'?'.device-detail .reference-code':'.device-pin-buttons')?.scrollIntoView({block:'center',behavior:'smooth'}));return a.tab==='code'?'The example model code is visible below the reading.':'Select a pin below the 3D model to inspect its role.';}
@@ -132,7 +134,9 @@ export default function Learn(){
   if(a.type==='colour'){if(lesson.kind!=='rgb'||!experiment)selectLesson('rgb-colour',true);else run();const channel=['red','green','blue'].indexOf(a.channel);setRgb(v=>v.map((n,i)=>i===channel?a.value:n));return `${a.channel} set to ${Math.round(a.value*100)} percent.`;}
   return ask(text);
  };
- const converse=async text=>{lastAnswer.current=null;setThread(t=>[...t,{role:'user',text}]);const reply=await handleInput(text);if(!reply)return '';const meta=lastAnswer.current,answer={role:'assistant',text:reply,engine:meta?.engine||'command',notice:meta?.notice,sources:(meta?.sources||[meta?.source]).filter(id=>sources[id])};setThread(t=>[...t,answer]);save([{role:'user',text},answer]);return reply;};
+ handleInputRef.current=handleInput;
+ const executeDictation=async text=>{const replies=[];for(const phrase of splitDictation(text)){const reply=await handleInputRef.current(phrase);if(reply)replies.push(reply);await new Promise(resolve=>setTimeout(resolve,0));}return replies.join(' ');};
+ const converse=async text=>{lastAnswer.current=null;setThread(t=>[...t,{role:'user',text}]);const reply=await executeDictation(text);if(!reply)return '';const meta=lastAnswer.current,answer={role:'assistant',text:reply,engine:meta?.engine||'command',notice:meta?.notice,sources:(meta?.sources||[meta?.source]).filter(id=>sources[id])};setThread(t=>[...t,answer]);save([{role:'user',text},answer]);return reply;};
  const chatSend=async text=>{if(/^stop dictation[.!?]?$/i.test(text.trim())&&voiceControl.current?.isEnabled()){await voiceControl.current.stopDictation();return;}const reply=await converse(text);if(reply)voiceControl.current?.speak(reply);};
  const submit=async e=>{e.preventDefault();if(asking)return;const text=command.trim();if(!text)return;setCommand('');await chatSend(text);};
  const upload=async e=>{const input=e.target,file=input.files?.[0];if(!file)return;setUploading(true);setSourceMessage('Reading the PDF…');setCloudNote('');
@@ -174,7 +178,7 @@ export default function Learn(){
     {cloudNote&&<p className="command-help" role="alert">{cloudNote}</p>}
     <LearningVoice ref={voiceControl} inputId="lesson-command" context={context} configured={!!connection?.voice?.configured} onCommand={converse} onDictationChange={setDictating} onActiveChange={active=>{setVoiceActive(active);if(active)setSound(false);}}/>
    </aside>
-   {library?<DeviceLibrary id={deviceId} onSelect={id=>{setDeviceId(id);setDeviceStep(0);}} step={deviceStep} onStep={setDeviceStep} boardId={boardId} viewCommand={cameraCommand} done={done} onComplete={key=>setDone(v=>v.includes(key)?v:[...v,key])}/>:project?<ProjectLab id={project} boardId={boardId} step={projectStep} onStep={setProjectStep} done={done} onComplete={key=>setDone(v=>v.includes(key)?v:[...v,key])} onBack={tour} action={projectAction} viewCommand={cameraCommand}/>:<><div className="studio-stage">
+   {library?<DeviceLibrary id={deviceId} onSelect={id=>{setDeviceId(id);setDeviceStep(0);}} step={deviceStep} onStep={setDeviceStep} boardId={boardId} onBoardChange={setBoardId} action={deviceAction} viewCommand={cameraCommand} done={done} onComplete={key=>setDone(v=>v.includes(key)?v:[...v,key])}/>:project?<ProjectLab id={project} boardId={boardId} step={projectStep} onStep={setProjectStep} done={done} onComplete={key=>setDone(v=>v.includes(key)?v:[...v,key])} onBack={tour} action={projectAction} viewCommand={cameraCommand}/>:<><div className="studio-stage">
     <div className="scene-topline"><span>{experiment?lesson.title.toUpperCase():`${board.name.toUpperCase()} / EXPLORE`}</span>{experiment&&<button className="code-toggle" aria-pressed={showCode} onClick={()=>setShowCode(v=>!v)}>{showCode?'Hide code':'</> Code'}</button>}</div>
     <BoardScene boardId={boardId} lesson={lesson} focus={focus} focusRequest={focusRequest} cameraCommand={cameraCommand} experiment={experiment} kind={lesson.kind} stage={stage} lit={output} rgb={rgb} angle={angle} pressed={running&&pressed} selectedPin={tab==='pinout'&&!spotOff?selectedPin.physical:null} highlight={highlight} callout={callout} onSelect={onSceneSelect} onClear={clearSpot} onPin={p=>{setSpotOff(false);setPin(p);if(!experiment)selectPart('gpio');setTab('pinout');}}/>
     {sourceMessage&&<div className="stage-toast" role="status"><span>{sourceMessage}</span><button onClick={()=>setSourceMessage('')} aria-label="Dismiss"><><Icon name="close" size={16}/></></button></div>}
@@ -205,3 +209,4 @@ export default function Learn(){
   </div>
  </section>;
 }
+

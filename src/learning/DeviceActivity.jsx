@@ -28,17 +28,19 @@ function WiringPreview({activity,device,selected,onSelect}){
  </svg><small>Signal map · select a wire · numbers match the list, not physical pin positions</small></div>;
 }
 
-export default function DeviceActivity({device,initialBoard,value,onValue}){
- const [board,setBoard]=useState(initialBoard==='arduino-uno-r3'?initialBoard:'raspberry-pi-5'),[running,setRunning]=useState(true),[samples,setSamples]=useState([]),[selected,setSelected]=useState(0),[tab,setTab]=useState('connections');
+export default function DeviceActivity({device,initialBoard,onBoardChange,active,onStart,action,value,onValue}){
+ const board=initialBoard;const setBoard=onBoardChange;const [running,setRunning]=useState(true),[samples,setSamples]=useState([]),[selected,setSelected]=useState(0),[tab,setTab]=useState('connections');
  const activity=useMemo(()=>deviceActivity(device.id,board,value),[device.id,board,value]);
  const reading=activityReading(device.id,board,value),e=device.experiment;
  useEffect(()=>{setSamples([]);setSelected(0);setTab('connections');},[device.id,board]);
  useEffect(()=>{
-  if(!running)return;
+  if(!running||!active)return;
   const sample=()=>setSamples(old=>[...old.slice(-39),value]);
   sample();const timer=setInterval(sample,250);return()=>clearInterval(timer);
- },[value,running,device.id,board]);
+ },[value,running,active,device.id,board]);
+ useEffect(()=>{if(!action)return;if(action.type==='run')setRunning(action.value);if(action.type==='tab')setTab(action.tab==='code'?'code':'connections');if(action.type==='activity'&&action.operation==='connections')setTab('connections');if(action.type==='activity'&&action.operation==='reset'){onValue(e.value);setSamples([]);setRunning(true);}},[action]);
  const points=samples.map((v,i)=>`${i*240/39},${54-(v-e.min)/(e.max-e.min)*46}`).join(' '),wire=activity.wires[Math.min(selected,activity.wires.length-1)];
+ if(!active)return <section className="part-activity"><div className="eyebrow">THEN MAKE SOMETHING</div><h3>{activity.title}</h3><p>{activity.goal}</p><button className="button button-dark" onClick={onStart}>Try activity <Icon name="arrow" size={16}/></button><p className="project-note">Connect this part to a 3D Raspberry Pi or Arduino Uno, then explore the controls and code.</p></section>;
  return <section className="part-activity" aria-label={`${device.name} board activity`}>
   <div className="eyebrow"><Icon name="play" size={14}/> TRY AN ACTIVITY</div><h3>{activity.title}</h3><p>{activity.goal}</p>
   <label className="activity-board">Connect to<select aria-label="Activity board" value={board} onChange={event=>setBoard(event.target.value)}><option value="raspberry-pi-5">Raspberry Pi 5</option><option value="arduino-uno-r3">Arduino Uno R3</option></select></label>
@@ -53,4 +55,5 @@ export default function DeviceActivity({device,initialBoard,value,onValue}){
   <p className="project-note">{activity.note}</p><a href={activity.source} target="_blank" rel="noreferrer" className="lesson-source">Check component datasheet <Icon name="diagonal" size={14}/></a>
  </section>;
 }
+
 
