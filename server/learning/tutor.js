@@ -1,10 +1,11 @@
 import {z} from 'zod';
 import {Agent} from '@mastra/core/agent';
 import {getPackage,packages,boardIds,identifyDocument,findFocus} from '../../shared/learning/catalog.js';
+import {projectIds,projectLesson,projectSources} from '../../shared/learning/projects.js';
 const componentIds=[...new Set(Object.values(packages).flatMap(p=>p.board.components.map(c=>c.id)))];
 const {board,experiments,pins,sources}=getPackage();
 
-export const lessonContextInput=z.object({boardId:z.enum(boardIds).default('raspberry-pi-5'),documentId:z.string().uuid().optional(),mode:z.enum(['walkthrough','experiment']),component:z.enum(componentIds),experimentId:z.enum(experiments.map(e=>e.id)),step:z.number().int().min(0).max(17)}).strict().superRefine((v,ctx)=>{if(!getPackage(v.boardId).board.components.some(c=>c.id===v.component)||v.step>=(v.mode==='experiment'?4:getPackage(v.boardId).board.components.length))ctx.addIssue({code:'custom',message:'Unknown experiment step.'});});
+export const lessonContextInput=z.object({boardId:z.enum(boardIds).default('raspberry-pi-5'),documentId:z.string().uuid().optional(),projectId:z.enum(projectIds).optional(),projectStep:z.number().int().min(0).max(3).optional(),mode:z.enum(['walkthrough','experiment']),component:z.enum(componentIds),experimentId:z.enum(experiments.map(e=>e.id)),step:z.number().int().min(0).max(17)}).strict().superRefine((v,ctx)=>{if(!getPackage(v.boardId).board.components.some(c=>c.id===v.component)||v.step>=(v.mode==='experiment'?4:getPackage(v.boardId).board.components.length))ctx.addIssue({code:'custom',message:'Unknown experiment step.'});});
 export const tutorInput=z.object({question:z.string().trim().min(1).max(1000),context:lessonContextInput}).strict();
 export const tutorOutput=z.object({answer:z.string().trim().min(1).max(1800),evidenceIds:z.array(z.string()).max(8),focus:z.enum(['none',...componentIds])}).strict();
 export function getEvidence(boardId){const {board,experiments,pins}=getPackage(boardId);return [
@@ -17,7 +18,8 @@ export const evidence=getEvidence('raspberry-pi-5');
 export function lessonSnapshot(raw,store){
  const context=lessonContextInput.parse(raw),{board,experiments,sources}=getPackage(context.boardId),e=experiments.find(e=>e.id===context.experimentId);
  let document=null;if(context.documentId){const doc=store?.get('document',context.documentId);if(!doc)throw Object.assign(Error('Lesson document not found.'),{status:404});const match=identifyDocument(doc);if(match.status!=='supported'||match.matches[0].boardId!==context.boardId)throw Object.assign(Error('The PDF does not match this board package.'),{status:400});document={id:doc.id,title:doc.title,revision:doc.revision,...match.matches[0]};}
- return {board:board.name,version:board.version,mode:context.mode,selectedComponent:board.components.find(c=>c.id===context.component),lesson:context.mode==='experiment'?{id:e.id,title:e.title,step:e.steps[context.step],parts:e.parts}:null,evidence:getEvidence(context.boardId),sources,document,liveSceneTools:false};
+ const project=context.projectId?projectLesson(context.projectId,context.boardId):null;
+ return {project:project?{...project,currentStep:project.steps[context.projectStep||0]}:null,board:board.name,version:board.version,mode:context.mode,selectedComponent:board.components.find(c=>c.id===context.component),lesson:context.mode==='experiment'?{id:e.id,title:e.title,step:e.steps[context.step],parts:e.parts}:null,evidence:[...getEvidence(context.boardId),...(project?project.steps.map((s,i)=>({id:`project:${project.id}:${i}`,text:s.text,source:project.source})):[])],sources:{...sources,...projectSources},document,liveSceneTools:false};
 }
 export function createTutorAgent(env=process.env){
  if(!env.GROQ_API_KEY?.trim()||!env.GROQ_MODEL?.trim())return null;

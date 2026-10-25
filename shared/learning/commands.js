@@ -1,6 +1,10 @@
 import {getPackage,findFocus} from './catalog.js';
 export function parseLessonCommand(raw,boardId='raspberry-pi-5'){
  const text=raw.toLowerCase().replace(/[^\p{L}\p{M}\p{N}\s]/gu,' ').replace(/\s+/g,' ').trim().replace(/^(please |can you |could you )/,'').replace(/ please$/,'');
+ if(/^(open |start |set up )?(the )?(camera lab|camera setup|camera project|camera)$/.test(text))return {type:'project',id:'camera-lab'};
+ if(/^(open |start |set up )?(the )?(rover lab|rover|robot)$/.test(text))return {type:'project',id:'rover-lab'};
+ if(/^(capture|capture frame|take a photo|take a picture)$/.test(text))return {type:'capture'};
+ const drive=/^(?:rover )?(forward|backward|reverse|turn left|turn right|stop rover)$/.exec(text);if(drive)return {type:'drive',direction:drive[1].replace('turn ','').replace('reverse','backward').replace('stop rover','stop')};
  if(/^(next|next step|go to next step|go to the next step|next module|go to next module|continue|go on|go next|अगला|अगला कदम|आगे)$/.test(text))return {type:'next'};
  if(/^(back|previous|previous step|go to previous step|go back|पीछे|पिछला)$/.test(text))return {type:'previous'};
  if(/^(repeat|repeat that|say that again|दोहराओ)$/.test(text))return {type:'repeat'};

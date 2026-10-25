@@ -1,0 +1,37 @@
+import {useEffect,useRef,useState} from 'react';
+import {advanceRover,initialRover,obstacleDistance,roverCode,roverWorld} from '../../shared/learning/projects.js';
+import ProjectHardwareScene from './ProjectHardwareScene.jsx';
+import ReferenceCode from '../components/ReferenceCode.jsx';
+export default function RoverLab({boardId,action,viewCommand}){
+ const canvas=useRef(null),state=useRef(initialRover()),trail=useRef([]);
+ const [running,setRunning]=useState(false),[speed,setSpeed]=useState(45),[left,setLeft]=useState(45),[right,setRight]=useState(45),[auto,setAuto]=useState(true),[threshold,setThreshold]=useState(70),[clear,setClear]=useState(false),[reading,setReading]=useState({distance:478,travel:0,blocked:false});
+ const obstacles=[{x:650,y:clear?100:300,radius:55},{x:820,y:450,radius:45}];
+ const reset=()=>{state.current=initialRover();trail.current=[];setRunning(false);};
+ const drive=(l,r)=>{setAuto(false);setLeft(l);setRight(r);setRunning(true);};
+ useEffect(()=>{if(!action)return;if(action.type==='run')setRunning(action.value);if(action.type==='drive'){if(action.direction==='stop')setRunning(false);else if(action.direction==='forward')drive(speed,speed);else if(action.direction==='backward')drive(-speed,-speed);else if(action.direction==='left')drive(-speed,speed);else if(action.direction==='right')drive(speed,-speed);}if(action.type==='reset')reset();},[action]);
+ useEffect(()=>{let frame,previous=0,lastReading=0;const ctx=canvas.current.getContext('2d');
+ const draw=time=>{const dt=previous?(time-previous)/1000:0;previous=time;
+  if(running){state.current=advanceRover(state.current,{left:auto?speed:left,right:auto?speed:right,auto,threshold},obstacles,dt);if(time-lastReading>100){trail.current.push([state.current.x,state.current.y]);if(trail.current.length>700)trail.current.shift();}}
+  const s=state.current,distance=obstacleDistance(s,obstacles);
+  if(time-lastReading>100){lastReading=time;setReading({distance:Math.round(distance),travel:Math.round(s.travel),blocked:s.blocked,heading:s.heading});}
+  ctx.fillStyle='#f1f3e8';ctx.fillRect(0,0,1000,600);ctx.strokeStyle='#dce3d2';ctx.lineWidth=1;for(let x=0;x<=1000;x+=50){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,600);ctx.stroke();}for(let y=0;y<=600;y+=50){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(1000,y);ctx.stroke();}
+  ctx.strokeStyle='#b9cba9';ctx.lineWidth=2;ctx.strokeRect(22,22,956,556);
+  ctx.strokeStyle='#c9a465';ctx.setLineDash([4,7]);ctx.beginPath();trail.current.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.stroke();ctx.setLineDash([]);
+  obstacles.forEach((o,i)=>{ctx.fillStyle='#d5b398';ctx.beginPath();ctx.arc(o.x,o.y,o.radius,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#bc906e';ctx.stroke();ctx.fillStyle='#694f3d';ctx.font='16px sans-serif';ctx.textAlign='center';ctx.fillText(i?'Rock':'Obstacle',o.x,o.y+5);});
+  ctx.save();ctx.translate(s.x,s.y);ctx.rotate(s.heading);ctx.strokeStyle=s.blocked?'#d16c4b':'#8cae92';ctx.setLineDash([6,6]);ctx.beginPath();ctx.moveTo(25,0);ctx.lineTo(Math.min(distance+22,220),0);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#253b34';ctx.fillRect(-25,-34,44,13);ctx.fillRect(-25,21,44,13);ctx.fillStyle='#67816a';ctx.beginPath();ctx.roundRect(-32,-24,64,48,10);ctx.fill();ctx.fillStyle='#193e37';ctx.fillRect(-19,-16,23,32);ctx.fillStyle='#df8b58';ctx.fillRect(-15,-10,15,20);ctx.fillStyle='#b9c7b4';ctx.fillRect(18,-20,12,40);for(const y of [-12,12]){ctx.fillStyle='#e1e8da';ctx.beginPath();ctx.arc(29,y,9,0,Math.PI*2);ctx.fill();ctx.fillStyle='#365247';ctx.beginPath();ctx.arc(30,y,5,0,Math.PI*2);ctx.fill();}ctx.restore();
+  ctx.textAlign='left';ctx.fillStyle='#66806b';ctx.font='16px monospace';ctx.fillText('1 grid square = 50 cm · top view',40,565);
+  frame=requestAnimationFrame(draw);
+ };frame=requestAnimationFrame(draw);return()=>cancelAnimationFrame(frame);
+ },[running,speed,left,right,auto,threshold,clear]);
+ const keys=e=>{const commands={ArrowUp:[speed,speed],ArrowDown:[-speed,-speed],ArrowLeft:[-speed,speed],ArrowRight:[speed,-speed]};if(commands[e.key]){e.preventDefault();drive(...commands[e.key]);}if(e.code==='Space'){e.preventDefault();setRunning(false);}};
+ return <div className="rover-lab"><ProjectHardwareScene kind="rover" boardId={boardId} pose={reading} viewCommand={viewCommand}/><div className="project-preview-heading"><span className={`live-pill ${running?'is-live':''}`}>{running?(reading.blocked?'OBSTACLE · STOPPED':'CANVAS ROVER · MOVING'):'CANVAS ROVER · PAUSED'}</span><small>Illustrative motion · no hardware connected</small></div>
+ <canvas ref={canvas} width="1000" height="600" className="rover-canvas" tabIndex={0} onKeyDown={keys} aria-label="Rover driving canvas. Focus and use arrow keys to drive, space to stop."/>
+ <div className="rover-readouts" aria-live="off"><div><strong>{reading.distance} cm</strong><small>Distance ahead</small></div><div><strong>{reading.travel} cm</strong><small>Travelled</small></div><div><strong>{auto?speed:left}% / {auto?speed:right}%</strong><small>Left / right command</small></div></div>
+ <div className="project-actions"><button className="button button-dark" onClick={()=>setRunning(v=>!v)}>{running?'Stop rover':'Run rover'}</button><button className="button button-light" onClick={reset}>Reset position</button><button className="button button-light" onClick={()=>setClear(v=>!v)}>{clear?'Put obstacle back':'Move obstacle aside'}</button></div>
+ <div className="rover-controls"><label><input type="checkbox" checked={auto} onChange={e=>setAuto(e.target.checked)}/> Automatic obstacle stop</label><label>Cruise speed · {speed}%<input aria-label="Rover cruise speed" type="range" min="10" max="80" value={speed} onChange={e=>setSpeed(+e.target.value)}/></label><label>Stop distance · {threshold} cm<input aria-label="Obstacle stop distance" type="range" min="25" max="150" value={threshold} onChange={e=>setThreshold(+e.target.value)}/></label>{!auto&&[['Left wheel',left,setLeft],['Right wheel',right,setRight]].map(([name,value,set])=><label key={name}>{name} · {value}%<input aria-label={name} type="range" min="-80" max="80" value={value} onChange={e=>set(+e.target.value)}/></label>)}</div>
+ <div className="rover-direction" role="group" aria-label="Drive rover"><button onClick={()=>drive(speed,speed)}>Forward</button><button onClick={()=>drive(-speed,speed)}>Turn left</button><button onClick={()=>drive(speed,-speed)}>Turn right</button><button onClick={()=>drive(-speed,-speed)}>Reverse</button><button onClick={()=>setRunning(false)}>Stop</button></div>
+ <p className="project-note">Two wheels steer by turning at different speeds. The two “eyes” represent an ultrasonic sensor. Automatic mode stops at the threshold; manual mode keeps collision boundaries. Arrow keys work while the canvas is focused; Space stops it.</p>
+ <ReferenceCode code={roverCode(boardId,{speed,threshold})} title={boardId==='raspberry-pi-5'?'Rover code · Python / GPIO Zero':'Rover code · Arduino / C++'} filename={boardId==='raspberry-pi-5'?'pinlight-rover.py':'pinlight-rover.ino'} description="This separate hardware example drives forward and stops for an obstacle using the cruise speed and stop distance above. Manual steering is a canvas exercise. The supervised program ends after 20 seconds; check the exact driver, power and sensor wiring first."/>
+ </div>;
+}

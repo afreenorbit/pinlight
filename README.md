@@ -95,3 +95,13 @@ Deploy the API and frontend, then run `npm run configure:learning-voice`. The sc
 Press **Speak** in chat and consent once. Dictate with Wispr or type; replies are read through a short, microphone-muted Bolna call. **Stop dictation** switches to a continuous microphone call; say **stop listening** to finish. Text dictation and continuous listening share the same chat, lesson navigation and scene commands. A playback call closes after detected speech ends, with a maximum duration as a backstop. These calls use Bolna credits; there is no browser speech-synthesis fallback.
 
 The bridge uses separate expiring capabilities for the browser and provider, deduplicates retried turns and waits for the desk's result before speaking. A disconnected tab returns a timeout message rather than a fabricated successful action. A live microphone check is still required after deployment.
+
+## Camera and rover extension
+
+Camera lab and Rover lab are available for both Pi 5 and Uno R3. Detailed procedural 3D assemblies are illustrative, not manufacturer CAD. Camera lab offers sample-image controls, optional local-only computer webcam input, PNG capture and download, and Pi/Picamera2 or Uno/Arducam Mini OV2640 reference programs. Rover lab includes a two-wheel driving canvas, obstacle stopping, distance readouts, wheel controls and separate TB6612FNG/ultrasonic hardware examples. All original activities expose their code by default, with Copy and Download. Physical hardware has not been tested.
+
+The Uno camera activity requires a buffered Arducam Mini 2MP Plus, rather than a bare camera sensor. The Pi ultrasonic example requires appropriate echo level shifting. Reference links accompany each lesson.
+
+### Submission history
+
+Camera/rover work is an extension after the recorded demo and is not represented by the original submission video or screenshots. The last code commit before this extension was `2080e94`. For judging, use the submitted revision; changes committed after October 25, 2026 at 11:59 PM PDT are post-deadline additions, not part of the submitted build.

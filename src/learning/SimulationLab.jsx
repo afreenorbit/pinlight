@@ -1,5 +1,5 @@
 import Icon from '../components/Icon.jsx';
-import {useState} from 'react';
+import ReferenceCode from '../components/ReferenceCode.jsx';
 import {simulationCode,describeSimulation} from '../../shared/learning/simulation.js';
 function useSimulation({boardId,lesson,state}){
  const {running,period,rgb,angle,pitch,pressed,sound,lit,sweep}=state,pi=boardId==='raspberry-pi-5';
@@ -21,6 +21,6 @@ export function SimulationControls({boardId,lesson,state,setPeriod,setRgb,setAng
 }
 // Reference code with the "running" line highlighted; opens as a drawer over the 3D canvas.
 export function CodePanel({boardId,lesson,state,showCode,setShowCode}){
- const [copied,setCopied]=useState(false);const {running,lit,pi,code,activeLine}=useSimulation({boardId,lesson,state});
- return <div className="live-code"><div><strong>{pi?'Python / GPIO Zero':'Arduino sketch / C++'}</strong><button onClick={()=>setShowCode(!showCode)}>{showCode?'Hide code':'Show code'}</button><button onClick={async()=>{try{await navigator.clipboard.writeText(code);setCopied(true);setTimeout(()=>setCopied(false),2000);}catch{setCopied(false);}}}>{copied?<>{"Copied "}<Icon name="check" size={16}/></>:'Copy'}</button></div>{showCode&&<pre>{code.split('\n').map((line,i)=><span key={i} className={activeLine(line)?'active-code-line':''}><b>{i+1}</b>{line||' '}{'\n'}</span>)}</pre>}<p>The model demonstrates this fixed program’s behavior. Slider values update the reference code; no arbitrary Python or C++ runs in the browser. Review wiring and device ratings before using real hardware.</p></div>;
+ const {pi,code,activeLine}=useSimulation({boardId,lesson,state});
+ return <ReferenceCode code={code} title={pi?'Python / GPIO Zero':'Arduino sketch / C++'} filename={`${lesson.id}.${pi?'py':'ino'}`} expanded={showCode} onToggle={()=>setShowCode(!showCode)} activeLine={activeLine} description="The preview demonstrates a prepared program. Controls update this reference code; Python and C++ are not executed in the browser. Check your exact hardware and wiring before running it."/>;
 }
