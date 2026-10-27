@@ -20,3 +20,13 @@ export async function apiRequest(path, options = {}) {
 export async function apiFile(path){const response=await apiFetch(path);if(!response.ok)throw Error('The source PDF could not be opened. Sign in again if needed.');return response.blob();}
 
 export const post = (path, data) => apiRequest(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+
+export async function streamBuild(data,onProgress){
+ const response=await apiFetch('/review/build?stream=1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+ if(!response.ok){const result=await response.json().catch(()=>null);throw Error(result?.error||unavailable);}
+ const reader=response.body.getReader(),decoder=new TextDecoder();let buffer='',result;
+ const process=line=>{if(!line.trim())return;const event=JSON.parse(line);if(event.type==='progress')onProgress(event.text);if(event.type==='error')throw Error(event.error);if(event.type==='result')result=event.result;};
+ try{while(true){const {done,value}=await reader.read();buffer+=decoder.decode(value,{stream:!done});let index;while((index=buffer.indexOf('\n'))>=0){process(buffer.slice(0,index));buffer=buffer.slice(index+1);}if(done)break;}process(buffer);}finally{reader.releaseLock();}
+ if(!result)throw Error('The review connection ended early. Please try again; your inputs are still in the form.');
+ return result;
+}
