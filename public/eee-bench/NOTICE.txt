@@ -1,0 +1,2 @@
+EEE-Bench by the dataset authors. Dataset card declares MIT licence. Source: https://huggingface.co/datasets/afdsafas/EEE-Bench
+Questions and images are unchanged; practice/evaluation partition is Pinlight-specific, not an official split.

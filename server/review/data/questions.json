@@ -1,0 +1,362 @@
+[
+  {
+    "id": "eee-0",
+    "index": 0,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: The steady state output \\( V_{out} \\) of the circuit shown below will\n\nChoices:\nA. saturate to \\( +V_{DD} \\)\nB. saturate to \\( -V_{EE} \\)\nC. become equal to 0.1 V\nD. become equal to -0.1 V\n",
+    "solution": "B",
+    "image": "/eee-bench/eee-0.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "practice"
+  },
+  {
+    "id": "eee-1",
+    "index": 1,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: In the circuit shown in the figure, the circuit is a \n\nChoices  \nA. full adder  \nB. full subtractor  \nC. shift register  \nD. decade counter\n",
+    "solution": "B",
+    "image": "/eee-bench/eee-1.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "practice"
+  },
+  {
+    "id": "eee-2",
+    "index": 2,
+    "problem": "Hint: Please answer the question requiring a floating-point number with one decimal place and provide the final value, e.g., 1.2, 1.3, 1.4, at the end.  \nQuestion: A resistive DC load receives pulse-width modulated (PWM) power from a controller circuit, and an oscilloscope shows the load voltage waveform as such shown in the image. Calculate the average power dissipated by the load, assuming a load resistance of 1.8 Ω, as shown in the figure. The average power dissipated by the load is ______W.",
+    "solution": "1.5",
+    "image": "/eee-bench/eee-2.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "practice"
+  },
+  {
+    "id": "eee-3",
+    "index": 3,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: An operational amplifier circuit is shown in the <image>. The output of the circuit for a given input \\( v_i \\) is ______.\n\nChoices  \nA. \\( -\\left(\\frac{R_2}{R_1}\\right)v_i \\)  \nB. \\( -(1 + \\frac{R_2}{R_1})v_i \\)  \nC. \\( (1 + \\frac{R_2}{R_1})v_i \\)  \nD. \\( +V_{\\text{sat}} \\) or \\( -V_{\\text{sat}} \\)\n",
+    "solution": "D",
+    "image": "/eee-bench/eee-3.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "practice"
+  },
+  {
+    "id": "eee-4",
+    "index": 4,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: The root locus plot for a system is given in the <image>. The open loop transfer function corresponding to this plot is given by ______.\n\nChoices:\nA. \\( G(S)H(S) = k \\frac{s(s+1)}{(s+2)(s+3)} \\)\nB. \\( G(S)H(S) = k \\frac{(s+1)}{(s+2)(s+3)^2} \\)\nC. \\( G(S)H(S) = k \\frac{1}{s(s-1)(s+2)(s+3)} \\)\nD. \\( G(S)H(S) = k \\frac{(s+1)}{(s+2)(s+3)} \\)\n",
+    "solution": "B",
+    "image": "/eee-bench/eee-4.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "practice"
+  },
+  {
+    "id": "eee-5",
+    "index": 5,
+    "problem": "Hint: Please answer the question requiring a floating-point number with one decimal place and provide the final value, e.g., 1.2, 1.3, 1.4, at the end.\nQuestion: In the <image>, the unit step response \\( y(t) \\) of a unity feedback system with open loop transfer function \n\n\\[\nG(s)H(s) = \\frac{K}{(s+1)^2(s+2)}\n\\]\n\nis shown. The value of \\( K \\) is ______ .",
+    "solution": "8",
+    "image": "/eee-bench/eee-5.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "practice"
+  },
+  {
+    "id": "eee-6",
+    "index": 6,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: Following is the K-map of a Boolean function of five variables \\( P, Q, R, S \\), and \\( X \\). The minimum sum-of-products (SOP) expression for the function is:  \nChoices  \nA. \\( \\bar{P} \\bar{Q} S \\bar{X} + P \\bar{Q} S \\bar{X} + Q \\bar{R} \\bar{S} X + Q R \\bar{S} X \\)  \nB. \\( \\bar{Q} S \\bar{X} + Q \\bar{S} X \\)  \nC. \\( \\bar{Q} S X + Q \\bar{S} \\bar{X} \\)  \nD. \\( \\bar{Q} S + Q \\bar{S} \\)\n",
+    "solution": "B",
+    "image": "/eee-bench/eee-6.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "practice"
+  },
+  {
+    "id": "eee-7",
+    "index": 7,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: The voltage of the three electrodes of a silicon transistor measured with a multimeter is shown in the figure. It can be determined that the transistor is operating in ( )\nChoices\nA. Amplification state\nB. Cutoff state\nC. Reverse amplification state\nD. Saturation state\n",
+    "solution": "A",
+    "image": "/eee-bench/eee-7.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "practice"
+  },
+  {
+    "id": "eee-8",
+    "index": 8,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: The waveforms of the binary symbols \\( s_1(t) \\) and \\( s_2(t) \\) at the input of the receiver are as shown in <image>, and the input Gaussian white noise has a power spectral density of \\( n_0 / 2 \\). \n\nChoices:  \nA. \\( P_{\\mathrm{e}} = \\frac{1}{2} \\operatorname{erfc}\\left[\\sqrt{\\frac{2 A^2 T}{n_0}}\\right] \\)  \nB. \\( P_{\\mathrm{e}} = \\frac{1}{2} \\operatorname{erfc}\\left[\\sqrt{\\frac{2 A^2 T}{3 n_0}}\\right] \\)  \nC. \\( P_{\\mathrm{e}} = \\frac{1}{2} \\operatorname{erfc}\\left[\\sqrt{\\frac{2 A^2 T}{2 n_0}}\\right] \\)  \nD. \\( P_{\\mathrm{e}} = \\operatorname{erfc}\\left[\\sqrt{\\frac{2 A^2 T}{3 n_0}}\\right] \\)\n",
+    "solution": "B",
+    "image": "/eee-bench/eee-8.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "practice"
+  },
+  {
+    "id": "eee-9",
+    "index": 9,
+    "problem": "Hint: Please answer the question requiring a floating-point number with one decimal place and provide the final value, e.g., 1.2, 1.3, 1.4, at the end.\nQuestion: In the circuit shown in figure, \\( E_1 = 10 \\, V \\), \\( E_2 = 20 \\, V \\), \\( R_1 = 40 \\, \\Omega \\), \\( R_2 = 30 \\, \\Omega \\), and \\( R_3 = 20 \\, \\Omega \\), then \\( U_{ab} = \\) ________V.",
+    "solution": "2",
+    "image": "/eee-bench/eee-9.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "practice"
+  },
+  {
+    "id": "eee-10",
+    "index": 10,
+    "problem": "Hint: Please answer the question requiring a floating-point number with one decimal place and provide the final value, e.g., 1.2, 1.3, 1.4, at the end.\nQuestion: The overall transfer function of a certain baseband transmission system is shown in <image>. The highest symbol rate for transmission without intersymbol interference in this system is ____ kBaud.\n",
+    "solution": "5",
+    "image": "/eee-bench/eee-10.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "practice"
+  },
+  {
+    "id": "eee-11",
+    "index": 11,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: In the circuit shown in figure, the feedback configuration of the circuit is ( ).\nChoices\nA. Voltage shunt negative feedback  \nB. Voltage series negative feedback  \nC. Current shunt negative feedback  \nD. Current series negative feedback\n",
+    "solution": "B",
+    "image": "/eee-bench/eee-11.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "practice"
+  },
+  {
+    "id": "eee-12",
+    "index": 12,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: In the series AC circuit shown in figure, given \\( U = 220V \\), \\( R = \\omega L = _x000C_rac{1}{\\omega C} = 100\\Omega \\), the active power consumed by this circuit is ( ).\nChoices\nA. \\( 2.2 \\times 100 \\) W  \nB. \\( 2.2^2 \\times 100 \\) W  \nC. \\( 2.2 \\times 300 \\) W  \nD. \\( 2.2^2 \\times 300 \\) W\n",
+    "solution": "B",
+    "image": "/eee-bench/eee-12.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "practice"
+  },
+  {
+    "id": "eee-13",
+    "index": 13,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: A rectangular coil with 110 turns and a certain area is placed in a uniform magnetic field with a specific magnetic induction strength. The coil rotates at a constant angular velocity around an axis perpendicular to the magnetic field, generating a sinusoidal alternating current. As shown in the figure, this alternating current is applied to the input of an ideal transformer, and a small light bulb \\( L \\), with a rated voltage of 10V, lights up normally. The resistance of the coil and wires is negligible. Which of the following statements is correct?\n\nChoices:  \nA. The maximum voltage of this alternating current is 220V  \nB. The frequency of this alternating current is 100Hz  \nC. The turns ratio of the primary to the secondary coil of the ideal transformer is 22:1  \nD. Moving the sliding contact of the rheostat towards the d-end will dim the light bulb\n",
+    "solution": "C",
+    "image": "/eee-bench/eee-13.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "practice"
+  },
+  {
+    "id": "eee-14",
+    "index": 14,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: A binary random variable \\( X \\) takes the value of 1 with probability \\( \\frac{1}{3} \\). \\( X \\) is input to a cascade of 2 independent identical binary symmetric channels (BSCs), each with crossover probability \\( \\frac{1}{2} \\). The output of the BSCs are the random variables \\( Y_1 \\) and \\( Y_2 \\) as shown in the <image>. The value of \\( H\\left(Y_1\\right) + H\\left(Y_2\\right) \\) in bits is\n\nChoices:  \nA. 1  \nB. 2  \nC. 3  \nD. 4\n",
+    "solution": "B",
+    "image": "/eee-bench/eee-14.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "practice"
+  },
+  {
+    "id": "eee-15",
+    "index": 15,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: In the following figures, the circuit that makes the output \\( F = 1 \\) is ( ).\nChoices\nA. figure A\nB. figure B\nC. figure C\nD. figure D\n",
+    "solution": "A",
+    "image": "/eee-bench/eee-15.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "practice"
+  },
+  {
+    "id": "eee-16",
+    "index": 16,
+    "problem": "Hint: Please answer the question requiring an integer answer and provide the final value, e.g., 1, 2, 3, at the end.\nQuestion: In the circuit shown below, the switch is closed at \\( t = 0 \\). The value of \\( \\theta \\) in degrees which will give the maximum value of DC offset of the current at the time of switching is ________  ",
+    "solution": "-45",
+    "image": "/eee-bench/eee-16.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "practice"
+  },
+  {
+    "id": "eee-17",
+    "index": 17,
+    "problem": "Hint: Please answer the question requiring a floating-point number with one decimal place and provide the final value, e.g., 1.2, 1.3, 1.4, at the end.\nQuestion: In the voltage comparator circuit shown in figure, the stable voltage of the Zener diode VD\\(_{Z}\\) is \\( U_{Z} = 6V \\), with a forward conduction voltage \\( U_{F} = 0.7V \\) and an externally applied reference voltage \\( U_{R} = 2V \\). The threshold voltage \\( U_{T} \\) of the circuit is ()V.\n",
+    "solution": "-2",
+    "image": "/eee-bench/eee-17.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "practice"
+  },
+  {
+    "id": "eee-18",
+    "index": 18,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: Given the open-loop amplitude-frequency characteristics shown in Figure 2, the unstable system is \\( (\\quad) \\).\n\nSystem (1)  \nSystem (2)  \nSystem (3)  \nAll are unstable\n",
+    "solution": "B",
+    "image": "/eee-bench/eee-18.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "practice"
+  },
+  {
+    "id": "eee-19",
+    "index": 19,
+    "problem": "Hint: Please answer the question requiring a floating-point number with one decimal place and provide the final value, e.g., 1.2, 1.3, 1.4, at the end.  \nQuestion: Calculate the (unregulated) voltage across the 1000 μF capacitor under no-load conditions in the regulated power supply circuit, as shown in the figure. The unregulated voltage across the 1000 μF capacitor is ______V.",
+    "solution": "32.5",
+    "image": "/eee-bench/eee-19.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "practice"
+  },
+  {
+    "id": "eee-20",
+    "index": 20,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: The figure shows the scenario of power transmission to a user through a transmission line. The step-up transformer \\( T_1 \\) and the step-down transformer \\( T_2 \\) are both considered ideal transformers, and the resistance of the transmission line is \\( R \\). Which of the following statements is correct?\n\nChoices:  \nA. The output voltage of \\( T_1 \\) is equal to the input voltage of \\( T_2 \\)  \nB. The output power of \\( T_1 \\) is greater than the input power of \\( T_2 \\)  \nC. If the user connects more electrical appliances, the power loss in \\( R \\) decreases  \nD. If the user connects more electrical appliances, the output power of \\( T_2 \\) decreases\n",
+    "solution": "B",
+    "image": "/eee-bench/eee-20.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "practice"
+  },
+  {
+    "id": "eee-21",
+    "index": 21,
+    "problem": "Hint: Please answer the question requiring a floating-point number with one decimal place and provide the final value, e.g., 1.2, 1.3, 1.4, at the end.\nQuestion: In the circuit shown in figure, to make the current \\( I = 2A \\), the value of the resistor \\( R \\) should be _______ Ω.\n",
+    "solution": "4",
+    "image": "/eee-bench/eee-21.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "practice"
+  },
+  {
+    "id": "eee-22",
+    "index": 22,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.  \nQuestion: In the circuit shown, the Norton equivalent resistance (in \\( \\Omega \\)) across terminals a-b is ______.  \n**Choices:**  \nA. 1.3  \nB. 0.8  \nC. 1.9  \nD. 2.2",
+    "solution": "A",
+    "image": "/eee-bench/eee-22.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "practice"
+  },
+  {
+    "id": "eee-23",
+    "index": 23,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: For the circuit shown, the locus of the impedance \\(Z(j\\omega)\\) is plotted as \\(\\omega\\) increases from zero to infinity. The values of \\(R_1\\) and \\(R_2\\) are:\n\n**Choices:**\nA. \\(R_1 = 2k\\Omega\\), \\(R_2 = 3k\\Omega\\)\nB. \\(R_1 = 5k\\Omega\\), \\(R_2 = 2k\\Omega\\)\nC. \\(R_1 = 5k\\Omega\\), \\(R_2 = 2.5k\\Omega\\)\nD. \\(R_1 = 2k\\Omega\\), \\(R_2 = 5k\\Omega\\)",
+    "solution": "A",
+    "image": "/eee-bench/eee-23.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "practice"
+  },
+  {
+    "id": "eee-24",
+    "index": 24,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: In the circuit shown in figure, the output expression is\n\nChoices\nA. \\( Y = \\overline{A}B + A \\overline{B} \\)\nB. \\( Y = AB \\)\nC. \\( Y = \\overline{A} \\overline{B} + AB \\)\nD. \\( Y = A + B \\)\n",
+    "solution": "C",
+    "image": "/eee-bench/eee-24.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "evaluation"
+  },
+  {
+    "id": "eee-25",
+    "index": 25,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: Assume that the \\(\\beta\\) of the transistor is extremely large and \\(V_{BE}=0.7 \\mathrm{~V}\\). \\(I_C\\) and \\(V_{CE}\\) in the circuit shown in <image> are\n\nChoices  \nA. \\(I_C=1 \\text{ mA}, V_{CE}=4.7 \\text{ V}\\)  \nB. \\(I_C=0.5 \\text{ mA}, V_{CE}=3.75 \\text{ V}\\)  \nC. \\(I_C=1 \\text{ mA}, V_{CE}=2.5 \\text{ V}\\)  \nD. \\(I_C=0.5 \\text{ mA}, V_{CE}=3.9 \\text{ V}\\)\n",
+    "solution": "C",
+    "image": "/eee-bench/eee-25.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "evaluation"
+  },
+  {
+    "id": "eee-26",
+    "index": 26,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: In the circuit shown in figure, the static tube voltage drop \\( U_{CE} \\) is 7V, then the quiescent current \\( I_E \\) is ( ).\nChoices\nA. 5mA\nB. 10mA\nC. 12mA\nD. 24mA\n",
+    "solution": "A",
+    "image": "/eee-bench/eee-26.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "evaluation"
+  },
+  {
+    "id": "eee-27",
+    "index": 27,
+    "problem": "Hint: Please answer the question requiring a floating-point number with one decimal place and provide the final value, e.g., 1.2, 1.3, 1.4, at the end.\nQuestion: Determine the Fourier series coefficient c_0 for x3(t) shown in <image>. c_0 = ()\n",
+    "solution": "0",
+    "image": "/eee-bench/eee-27.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "evaluation"
+  },
+  {
+    "id": "eee-28",
+    "index": 28,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion:In the circuit shown in figure, which contains an ideal diode, when the effective value of the input voltage \\( u \\) is 10V, the average value of the output voltage \\( u_0 \\) is ( ).\nChoices\nA. 12V\nB. 9V\nC. 4.5V\nD. 0V\n",
+    "solution": "D",
+    "image": "/eee-bench/eee-28.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "evaluation"
+  },
+  {
+    "id": "eee-29",
+    "index": 29,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: The circuit shown in <image> is:  \nChoices  \nA. An oscillating circuit and its output is a square wave  \nB. The one whose output remains stable in '1' state  \nC. The one having output remains stable in '0' state  \nD. Has a single pulse of three times propagation delay\n",
+    "solution": "A",
+    "image": "/eee-bench/eee-29.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "evaluation"
+  },
+  {
+    "id": "eee-30",
+    "index": 30,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: In the single-phase rectifier consisting of three thyristors \\(T_1\\), \\(T_2\\), \\(T_3\\) and a diode \\(D_1\\) shown in <image>, the circuit feeds power to a \\(10 \\, \\text{A}\\) constant current load. \\(T_1\\) and \\(T_3\\) are fired at \\(\\alpha = 60^\\circ\\) and \\(T_2\\) is fired at \\(\\alpha = 240^\\circ\\). The reference for \\(\\alpha\\) is the positive zero crossing of \\(V_{\\text{in}}\\). The average voltage \\(V_o\\) across the load in volts is ____ (Round off to 2 decimal places).\n\nChoices:\nA. 25.35  \nB. 36.47  \nC. 39.79  \nD. 48.64\n",
+    "solution": "C",
+    "image": "/eee-bench/eee-30.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "evaluation"
+  },
+  {
+    "id": "eee-31",
+    "index": 31,
+    "problem": "Hint: Please answer the question requiring a floating-point number with one decimal place and provide the final value, e.g., 1.2, 1.3, 1.4, at the end.\nQuestion: Replacing the circuit shown in figure (a) with the equivalent current source shown in figure, the parameters of the current source are \\( I_S = \\) ________ A.\n",
+    "solution": "1.5",
+    "image": "/eee-bench/eee-31.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "evaluation"
+  },
+  {
+    "id": "eee-32",
+    "index": 32,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: The switches T1 and T2 in <image> (a) are switched in a complementary fashion with sinusoidal pulse width modulation technique. The modulating voltage \\( v_m(t) = 0.8 \\sin(200\\pi t) V \\) and the triangular carrier voltage \\( v_c \\) are as shown in <image> (b). The carrier frequency is 5 kHz. The peak value of the 100 Hz component of the load current \\( i_L \\), in ampere, is ______.\n\nChoices  \nA. 10  \nB. 100  \nC. 150  \nD. 20\n",
+    "solution": "A",
+    "image": "/eee-bench/eee-32.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "evaluation"
+  },
+  {
+    "id": "eee-33",
+    "index": 33,
+    "problem": "Hint: Please answer the question requiring a floating-point number with one decimal place and provide the final value, e.g., 1.2, 1.3, 1.4, at the end.\nQuestion: In the transistor amplifier circuit shown in <image>, the transistor has the following parameters: \\( \\beta_{DC} = 60 \\), \\( V_{BE} = 0.7V \\), \\( h_{ie} \\rightarrow \\infty \\), \\( h_{fe} \\rightarrow \\infty \\). The capacitance \\( C_c \\) can be assumed to be infinite.\nUnder the DC conditions, the collector-to-emitter voltage drop is ( )Volts",
+    "solution": "6",
+    "image": "/eee-bench/eee-33.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "evaluation"
+  },
+  {
+    "id": "eee-34",
+    "index": 34,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: A Boolean digital circuit is composed using two 4-input multiplexers (M1 and M2) and one 2-input multiplexer (M3) as shown in the figure. X0-X7 are the inputs of the multiplexers M1 and M2 and could be connected to either 0 or 1. The select lines of the multiplexers are connected to Boolean variables A, B, and C as shown in figure. Which one of the following set of values of (X0, X1, X2, X3, X4, X5, X6, X7) will realize the Boolean function \\( \\overline{A} + \\overline{A} \\cdot \\overline{C} + A \\cdot \\overline{B} \\cdot C \\)?\nChoices  \nA. (1, 1, 0, 0, 1, 1, 1, 0)  \nB. (1, 1, 0, 0, 1, 1, 0, 1)  \nC. (1, 1, 0, 1, 1, 1, 0, 0)  \nD. (0, 0, 1, 1, 0, 1, 1, 1)\n",
+    "solution": "C",
+    "image": "/eee-bench/eee-34.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "evaluation"
+  },
+  {
+    "id": "eee-35",
+    "index": 35,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: In the circuit shown in figure, the current value \\( I \\) is:\nChoices\nA. -6A\nB. -2A\nC. 2A\nD. 6A\n",
+    "solution": "C",
+    "image": "/eee-bench/eee-35.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "evaluation"
+  },
+  {
+    "id": "eee-36",
+    "index": 36,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: In the circuit shown in figure, the correct expression reflecting the relationship between voltages \\( U_1 \\) and \\( U \\) is ( ).\nChoices\nA. \\( U_1 = \\frac{R_2}{R_1 + R_2} U \\)\nB. \\( U_1 = \\frac{R_1 + R_2}{R_2} U \\)\nC. \\( U_1 = \\frac{R_1}{R_1 + R_2} U \\)\nD. \\( U_1 = \\frac{R_1 + R_2}{R_1} U \\)\n",
+    "solution": "C",
+    "image": "/eee-bench/eee-36.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "evaluation"
+  },
+  {
+    "id": "eee-37",
+    "index": 37,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.  \nQuestion: The switch has been in position 1 for a long time and abruptly changes to position 2 at \\( t = 0 \\). If time \\( t \\) is in seconds, the capacitor voltage \\( V_C \\) (in volts) for \\( t > 0 \\) is given by  \n**Choices:**  \nA. \\( 4(1 - \\exp(-t/0.5)) \\)  \nB. \\( 10 - 6 \\exp(-t/0.5) \\)  \nC. \\( 4(1 - \\exp(-t/0.6)) \\)  \nD. \\( 10 - 6 \\exp(-t/0.6) \\)",
+    "solution": "D",
+    "image": "/eee-bench/eee-37.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "evaluation"
+  },
+  {
+    "id": "eee-38",
+    "index": 38,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: Consider the block diagram shown in <image>. The transfer function \\( \\frac{C(s)}{R(s)} \\) is ______.  \nChoices:  \nA. \\( \\frac{G_1 G_2}{1 + G_1 G_2} \\)  \nB. \\( G_1 G_2 + G_1 + 1 \\)  \nC. \\( G_1 G_2 + G_2 + 1 \\)  \nD. \\( \\frac{G_1}{1 + G_1 G_2} \\)\n",
+    "solution": "C",
+    "image": "/eee-bench/eee-38.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "evaluation"
+  },
+  {
+    "id": "eee-39",
+    "index": 39,
+    "problem": "Hint: Please answer the question and provide the correct option letter, e.g., A, B, C, D, at the end.\nQuestion: Given the system as shown in <image>, where \\( T \\) is the sampling period, explain the effect of changes in the sampling period on system stability.\n\nChoices:  \nA. As the sampling period increases (i.e., sampling frequency decreases), the critical value of \\( K \\) increases, thereby improving the system's stability.  \nB. As the sampling period increases (i.e., sampling frequency decreases), the critical value of \\( K \\) remains unchanged, so there is no effect on the system's stability.  \nC. As the sampling period increases (i.e., sampling frequency decreases), the critical value of \\( K \\) increases, leading to decreased system stability.  \nD. As the sampling period increases (i.e., sampling frequency decreases), the critical value of \\( K \\) decreases, leading to decreased system stability.\n",
+    "solution": "D",
+    "image": "/eee-bench/eee-39.jpg",
+    "source": "https://huggingface.co/datasets/afdsafas/EEE-Bench",
+    "split": "evaluation"
+  }
+]
