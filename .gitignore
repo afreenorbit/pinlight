@@ -20,3 +20,13 @@ chat.md
 # Local recording notes
 /docs/demo-recording-script.md
 /docs/blog/pinlight-dev-submission.md
+# Practice question answer keys and images are needed by the API at runtime.
+!server/review/data/
+
+# Internal planning notes and local QA output (not part of the app)
+/docs/research/
+/output/
+# Unused experiments (KiCad models and a PDF export that nothing imports)
+/vendor/
+/public/models/
+/src/review/pdf.js

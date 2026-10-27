@@ -14,7 +14,12 @@
     "test:live": "node --env-file=.env scripts/test-device-extraction.js",
     "configure:learning-voice": "node --env-file=.env scripts/configure-learning-voice.js",
     "test:learning-live": "node --env-file=.env scripts/test-learning-live.js",
-    "migrate:learning": "node --env-file=.env scripts/migrate-learning-storage.js"
+    "migrate:learning": "node --env-file=.env scripts/migrate-learning-storage.js",
+    "migrate:review": "node --env-file=.env scripts/migrate-build-review.js",
+    "import:eee": "node scripts/import-eee-bench.js",
+    "evaluate:review": "node --env-file=.env scripts/evaluate-review.js",
+    "check:review-storage": "node --env-file=.env scripts/check-review-storage.js",
+    "migrate:arena": "node --env-file=.env scripts/migrate-arena.js"
   },
   "engines": {
     "node": ">=24"
@@ -29,6 +34,8 @@
     "@supabase/supabase-js": "^2.118.0",
     "@tesseract.js-data/eng": "^1.0.0",
     "jose": "^6.2.13",
+    "katex": "^0.19.1",
+    "manifold-3d": "^3.5.4",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^6.4.299",
     "pg": "^8.23.1",
@@ -40,6 +47,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.2.0",
+    "occt-import-js": "^0.0.23",
     "vite": "^7.3.7"
   }
 }
