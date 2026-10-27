@@ -1,0 +1,48 @@
+/* Stats panel */
+.stats-panel{display:grid;gap:22px;--good:#2fcf7a}
+.stats-tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.stats-tiles div{background:#fff;border:2px solid var(--ink);border-radius:16px;padding:12px;display:grid;gap:2px;text-align:center}
+.stats-tiles strong{font-family:'Bowlby One',sans-serif;font-weight:400;font-size:28px}
+.stats-tiles span{font-size:12px;font-weight:700;opacity:.75}
+.stats-actions{display:flex;gap:12px;flex-wrap:wrap}
+.stats-note{font-size:13px;font-weight:600;background:var(--butter);border-radius:12px;padding:8px 12px;margin:0}
+.stats-columns{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:22px}
+.stats-columns h3{font-size:17px;margin-bottom:12px}
+.topic-bars{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.topic-bars button{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:4px 10px;align-items:center;background:#fff;border:2px solid var(--ink)!important;border-radius:14px;padding:10px 12px;text-align:left;transition:transform .12s}
+.topic-bars button:hover{transform:translate(-1px,-1px);background:var(--cream)}
+.topic-name{font-weight:800}
+.topic-status{font-size:11px;font-weight:800;border-radius:999px;padding:2px 8px;border:1.5px solid var(--ink)}
+.topic-bars b{font-size:13px;text-align:right}
+.topic-track{grid-column:1/-1;height:10px;border:2px solid var(--ink);border-radius:999px;background:var(--cream);overflow:hidden}
+.topic-track span{display:block;height:100%}
+.topic-bars small{grid-column:1/-1;font-size:11px;font-weight:800}
+.topic-bars small.up{color:#127a43}.topic-bars small.down{color:#c0392b}
+.s-strong{background:#2fcf7a}.s-improving{background:#ffd23f}.s-revise{background:#ff7a66}.s-new{background:#fff}
+.topic-status.s-strong{background:#c8f7da}.topic-status.s-improving{background:#fff3b0}.topic-status.s-revise{background:#ffd3cc}
+.untried{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:12px;font-size:13px;font-weight:700}
+.untried button{background:#fff;border:1.5px solid var(--ink)!important;border-radius:999px;padding:3px 10px;font-size:12px;font-weight:700}
+.missed-list{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.missed-list li{background:#fff;border:2px solid var(--ink);border-radius:14px;padding:10px 12px;display:grid;gap:4px;justify-items:start}
+.missed-list p{margin:0;font-weight:600;font-size:14px}
+.missed-list small{font-weight:800;color:#c0392b}
+.stats-empty{font-size:14px;font-weight:600;opacity:.7}
+
+/* Practice */
+.practice-head{display:flex;align-items:center;gap:16px;background:var(--cream);border:3px solid var(--ink);border-radius:24px;padding:14px 20px;box-shadow:5px 5px 0 var(--ink)}
+.practice-head>div{display:grid;gap:8px;justify-items:start}
+.practice-head strong{font-weight:800}
+.practice-score{margin-left:auto;font-family:'Bowlby One',sans-serif;font-size:34px;display:grid;justify-items:end;line-height:1}
+.practice-score small{font:700 12px 'Bricolage Grotesque',sans-serif}
+.review-card{animation:slide-in .3s ease-out}
+.review-prompt{font-family:'Bowlby One',sans-serif;font-size:clamp(18px,2.2vw,24px);line-height:1.2;margin:0}
+.review-card blockquote{margin:0;background:var(--cream);border:2px solid var(--ink);border-radius:14px;padding:12px 14px;font-weight:500;line-height:1.5}
+.review-grading{display:flex;align-items:center;gap:10px;font-weight:800}
+.review-meters{display:grid;gap:8px;max-width:420px}
+.key-points.big{font-size:15px;gap:6px}
+.review-actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-end}
+.practice-summary{font-size:17px;font-weight:600;max-width:600px}
+.practice-rows{list-style:none;margin:0;padding:0;width:min(560px,100%);display:grid;gap:10px;text-align:left}
+.practice-rows li{display:grid;grid-template-columns:minmax(0,160px) 1fr;gap:12px;align-items:center;background:#fff;border:2px solid var(--ink);border-radius:14px;padding:10px 12px;font-weight:800}
+.podium-score small{font:700 16px 'Bricolage Grotesque',sans-serif}
+@media (max-width:760px){.stats-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}.stats-columns{grid-template-columns:minmax(0,1fr)}.practice-rows li{grid-template-columns:1fr}}
