@@ -15,6 +15,7 @@ import {kitParts,kitPartIds,stepHighlight,findKitPart} from '../../shared/learni
 import {useAuth} from '../lib/auth.jsx';
 import {ensureItem,findItem,uploadItemPdf,getItem,listChats,createChat,listMessages,addMessages} from '../lib/desk.js';
 import '../learning/desk.css';
+import {pageParam} from '../lib/url-state.js';
 
 const DocumentJourney=lazy(()=>import('../learning/DocumentJourney.jsx'));
 
@@ -23,18 +24,10 @@ const SERVO_SWEEP=[20,90,160,90];
 export default function Learn(){
  const {user}=useAuth();
  const [tutorOpen,setTutorOpen]=useState(()=>window.matchMedia('(min-width:1280px)').matches);
- const [compactTutor,setCompactTutor]=useState(()=>window.matchMedia('(max-width:1199px)').matches);
  const tutorPanel=useRef(null),tutorToggle=useRef(null);
  const showTutor=()=>{setTutorOpen(true);requestAnimationFrame(()=>window.document.getElementById('lesson-command')?.focus({preventScroll:true}));};
  const hideTutor=()=>{setTutorOpen(false);requestAnimationFrame(()=>tutorToggle.current?.focus({preventScroll:true}));};
- useEffect(()=>{const media=window.matchMedia('(max-width:1199px)'),change=()=>{setCompactTutor(media.matches);if(media.matches)setTutorOpen(false);};media.addEventListener('change',change);return()=>media.removeEventListener('change',change);},[]);
- useEffect(()=>{
-  if(!tutorOpen||!compactTutor)return;
-  const previous=window.document.body.style.overflow;window.document.body.style.overflow='hidden';
-  requestAnimationFrame(()=>window.document.getElementById('lesson-command')?.focus());
-  const keys=e=>{if(e.key==='Escape'){e.preventDefault();hideTutor();}if(e.key==='Tab'){const items=[...tutorPanel.current.querySelectorAll('button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled),summary')].filter(el=>el.getClientRects().length);const first=items[0],last=items.at(-1);if(e.shiftKey&&window.document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&window.document.activeElement===last){e.preventDefault();first?.focus();}}};
-  window.addEventListener('keydown',keys);return()=>{window.document.body.style.overflow=previous;window.removeEventListener('keydown',keys);};
- },[tutorOpen,compactTutor]);
+ useEffect(()=>{if(!tutorOpen)return;const keys=e=>{if(e.key==='Escape'&&tutorPanel.current?.contains(window.document.activeElement)){e.preventDefault();hideTutor();}};window.addEventListener('keydown',keys);return()=>window.removeEventListener('keydown',keys);},[tutorOpen]);
  const [journeyOpen,setJourneyOpen]=useState(false);
  const [library,setLibrary]=useState(false),[deviceId,setDeviceId]=useState('tmp36'),[deviceStep,setDeviceStep]=useState(0);
  const [deviceAction,setDeviceAction]=useState(null);
@@ -42,6 +35,7 @@ export default function Learn(){
  useEffect(()=>{setQuestionFocus(null);},[library,deviceId]);
  const [project,setProject]=useState(null),[projectStep,setProjectStep]=useState(0),[projectAction,setProjectAction]=useState(null);
  const [boardId,setBoardId]=useState('raspberry-pi-5'),[document,setDocument]=useState(null),[documents,setDocuments]=useState([]),[uploading,setUploading]=useState(false),[sourceMessage,setSourceMessage]=useState('');
+ useEffect(()=>{const params=new URLSearchParams(location.search),host=params.get('board'),device=params.get('device');if(['raspberry-pi-5','arduino-uno-r3'].includes(host))setBoardId(host);if(device&&deviceById(device)){setDeviceId(device);setLibrary(true);}},[]);
  const {board,experiments,pins,sources:boardSources}=getPackage(boardId),sources={...boardSources,...projectSources,...Object.fromEntries(devices.map(d=>[`device-${d.id}`,{title:`${d.name} source`,url:d.source}]))},pi=boardId==='raspberry-pi-5';
  const [mode,setMode]=useState('walkthrough'),[step,setStep]=useState(0),[experimentId,setExperimentId]=useState('first-light'),[command,setCommand]=useState(''),[running,setRunning]=useState(false),[period,setPeriod]=useState(1000),[lit,setLit]=useState(false),[feedback,setFeedback]=useState(null),[tab,setTab]=useState('overview'),[pin,setPin]=useState(11),[done,setDone]=useState(loadProgress),[rgb,setRgb]=useState([.7,.2,1]),[angle,setAngle]=useState(90),[sweep,setSweep]=useState(true),[pitch,setPitch]=useState(440),[pressed,setPressed]=useState(false),[sound,setSound]=useState(true),[showCode,setShowCode]=useState(true),[focusRequest,setFocusRequest]=useState(0),[cameraCommand,setCameraCommand]=useState(null),[part,setPart]=useState(null),[spotOff,setSpotOff]=useState(false);
  const voiceControl=useRef(null),audio=useRef(null),questionRequest=useRef(null),deskRef=useRef(null),uploadRef=useRef(null),pressTimer=useRef(null),lastAnswer=useRef(null),threadRef=useRef(null),currentRef=useRef(null);
@@ -53,7 +47,7 @@ export default function Learn(){
  const selectedPin=pins.find(p=>p.physical===pin)||pins[0];
  const partInfo=part&&(kitParts[part]||board.components.find(c=>c.id===part));
  const docItem=document&&document.status!=='supported',itemSlug=library?`device:${deviceId}`:docItem?`doc:${document.revision}`:`board:${boardId}`;
- useEffect(()=>{let alive=true;apiRequest('/learning/status').then(s=>{if(alive)setConnection(s);}).catch(()=>{});apiRequest('/learning/documents').then(rows=>{if(!alive)return;setDocuments(rows);const requested=new URLSearchParams(location.search).get('document');if(requested){const saved=rows.find(d=>d.id===requested);if(saved){setDocument(saved);setJourneyOpen(true);return;}}const first=rows.find(d=>d.status==='supported'&&d.matches[0].boardId==='raspberry-pi-5');if(first)setDocument(d=>d||first);}).catch(()=>setSourceMessage('Start the local API to load or upload PDFs.'));return()=>{alive=false;questionRequest.current?.abort();};},[]);
+ useEffect(()=>{let alive=true;apiRequest('/learning/status').then(s=>{if(alive)setConnection(s);}).catch(()=>{});apiRequest('/learning/documents').then(rows=>{if(!alive)return;setDocuments(rows);const requested=pageParam('document');if(requested){const saved=rows.find(d=>d.id===requested);if(saved){setDocument(saved);setJourneyOpen(true);return;}}const first=rows.find(d=>d.status==='supported'&&d.matches[0].boardId==='raspberry-pi-5');if(first)setDocument(d=>d||first);}).catch(()=>setSourceMessage('Start the local API to load or upload PDFs.'));return()=>{alive=false;questionRequest.current?.abort();};},[]);
  useEffect(()=>{try{localStorage.setItem('pinlight-progress-v3',JSON.stringify(done));}catch{}},[done]);
  useEffect(()=>{questionRequest.current?.abort();setAsking(false);},[mode,experimentId,step,boardId,library,deviceId,deviceStep,project,projectStep]);
  useEffect(()=>{if(!running){setLit(false);return;}setLit(true);const t=setInterval(()=>setLit(v=>!v),period);return()=>clearInterval(t);},[running,period]);
@@ -67,7 +61,7 @@ export default function Learn(){
  useEffect(()=>{currentRef.current?.scrollIntoView({block:'nearest',behavior:'smooth'});},[step,mode,experimentId]);
  useEffect(()=>{const onKey=e=>{if(e.key==='Escape'&&!window.document.activeElement?.matches('input,textarea,select'))clearSpot();};addEventListener('keydown',onKey);return()=>removeEventListener('keydown',onKey);},[]);
  // Opening /learn?item=…&chat=… from My desk restores that board/document and conversation.
- useEffect(()=>{if(!user)return;const params=new URLSearchParams(location.search),id=params.get('item');if(!id)return;getItem(id).then(row=>{if(!row)return;if(row.slug.startsWith('device:')&&deviceById(row.slug.slice(7))){setDeviceId(row.slug.slice(7));setLibrary(true);setProject(null);}if(row.board_id)setBoardId(row.board_id);if(row.local_document_id||row.file_path)restoreLearningDocument(row).then(doc=>{setDocument(doc);setJourneyOpen(row.slug.startsWith('doc:'));}).catch(e=>setCloudNote(e.message));setItem(row);const chat=params.get('chat');listChats(row.id).then(list=>{setChats(list);const pick=list.find(c=>c.id===chat)||list[0];if(pick)openChat(pick.id);});}).catch(e=>setCloudNote(e.message));},[user]);
+ useEffect(()=>{if(!user)return;const id=pageParam('item');if(!id)return;getItem(id).then(row=>{if(!row)return;if(row.slug.startsWith('device:')&&deviceById(row.slug.slice(7))){setDeviceId(row.slug.slice(7));setLibrary(true);setProject(null);}if(row.board_id)setBoardId(row.board_id);if(row.local_document_id||row.file_path)restoreLearningDocument(row).then(doc=>{setDocument(doc);setJourneyOpen(row.slug.startsWith('doc:'));}).catch(e=>setCloudNote(e.message));setItem(row);const chat=pageParam('chat');listChats(row.id).then(list=>{setChats(list);const pick=list.find(c=>c.id===chat)||list[0];if(pick)openChat(pick.id);});}).catch(e=>setCloudNote(e.message));},[user]);
  // A new board or document starts a fresh thread.
  useEffect(()=>{if(item&&item.slug===itemSlug)return;setItem(null);setChats([]);setChatId(null);setThread([]);if(!user)return;listChatsFor(itemSlug);},[itemSlug,user]);
  const listChatsFor=async slug=>{try{const row=await findItem(slug);if(!row)return;setItem(row);setChats(await listChats(row.id));}catch(e){setCloudNote(e.message);}};
@@ -130,17 +124,17 @@ export default function Learn(){
  </>;
  if(journeyOpen&&document)return <><input ref={uploadRef} type="file" accept="application/pdf,.pdf" hidden onChange={upload}/><Suspense fallback={<p role="status">Opening your PDF journey…</p>}><DocumentJourney expectedPipelineVersion={connection?.processing?.version} key={document.id} document={document} onBack={()=>{setJourneyOpen(false);setDocument(null);}} onUpload={()=>uploadRef.current.click()} uploading={uploading}/></Suspense>{sourceMessage&&<p role="status">{sourceMessage}</p>}{cloudNote&&<p role="alert">{cloudNote}</p>}</>;
  return <section className={`studio ${tutorOpen?"has-tutor":""}`} ref={deskRef}>
-  <div className="desk-heading"><div><h1>Learning desk</h1><p>Explore a part. Understand it. Make it work.</p></div><button ref={tutorToggle} className="desk-tutor-toggle" aria-expanded={tutorOpen} aria-controls="desk-tutor" onClick={()=>tutorOpen?hideTutor():showTutor()}><Icon name="mic" size={18}/>{voiceActive?"Voice active":tutorOpen?"Hide tutor":"Ask the tutor"}</button></div>
+  <div className="desk-heading"><button ref={tutorToggle} className="desk-tutor-toggle" aria-label="Toggle tutor sidebar" title="Toggle tutor sidebar" aria-expanded={tutorOpen} aria-controls="desk-tutor" onClick={()=>tutorOpen?hideTutor():showTutor()}><Icon name="sidebar" size={22}/></button><div><h1>Learning desk</h1><p>Explore a part. Understand it. Make it work.</p></div>{voiceActive&&<small>Voice active</small>}</div>
   <header className="studio-bar">
    <div className="studio-boards" role="group" aria-label="Board">{['raspberry-pi-5','arduino-uno-r3'].map(id=>{const doc=documents.find(d=>d.status==='supported'&&d.matches[0].boardId===id);return <button key={id} aria-pressed={!library&&id===boardId} onClick={()=>openBoard(id,doc)} title={doc?`From ${doc.title}`:'Prepared board package'}>{getPackage(id).board.name}</button>;})}<button aria-pressed={library} onClick={()=>openLibrary(deviceId)}><Icon name="sensor" size={17}/> Chips & sensors</button><a className="studio-pdf-link" href="/desk"><Icon name="file" size={15}/> My PDFs</a><input ref={uploadRef} type="file" accept="application/pdf,.pdf" hidden onChange={upload}/></div>
 
    {!library&&<div className="studio-modes" role="group" aria-label="Mode"><button aria-pressed={!experiment&&!project&&!library} onClick={tour}><b>1</b> Explore the board</button><button aria-pressed={experiment&&!project&&!library} onClick={()=>selectLesson(experimentId)}><b>2</b> Make something</button><button aria-pressed={project==='camera-lab'} onClick={()=>openProject('camera-lab')}><Icon name="camera" size={17}/> Camera lab</button><button aria-pressed={project==='rover-lab'} onClick={()=>openProject('rover-lab')}><Icon name="rover" size={17}/> Rover lab</button></div>}
    <div className="studio-status"><span>{library?`${done.filter(key=>key.startsWith(`device-${deviceId}/`)).length}/4 steps`:`${boardDone}/${board.components.length} stops`}</span>{running&&<span className="live-pill is-live">Running</span>}</div>
   </header>
-  {compactTutor&&tutorOpen&&<button className="tutor-backdrop" aria-label="Close tutor" onClick={hideTutor}/>}
   <div className="studio-grid">
-   <aside id="desk-tutor" ref={tutorPanel} className="studio-chat" hidden={!tutorOpen} role={compactTutor?"dialog":undefined} aria-modal={compactTutor&&tutorOpen?true:undefined} aria-label="Tutor chat">
-    <div className="chat-head"><div><strong>Ask the tutor</strong><small>Ask about a part to bring it into focus.</small></div><button className="tutor-close" aria-label="Close tutor" onClick={hideTutor}><Icon name="close" size={18}/></button>{user?<div className="chat-switcher"><select aria-label="Chats for this board" value={chatId||''} onChange={e=>e.target.value?openChat(e.target.value):newChat()}><option value="">New chat</option>{chats.map(c=><option key={c.id} value={c.id}>{c.title}</option>)}</select></div>:null}</div>
+   {!tutorOpen&&<button className="tutor-rail" aria-controls="desk-tutor" aria-expanded="false" onClick={showTutor}><Icon name="sidebar" size={18}/><span>Ask the tutor</span></button>}
+   <aside id="desk-tutor" ref={tutorPanel} className="studio-chat" inert={!tutorOpen} aria-hidden={!tutorOpen} aria-label="Tutor chat">
+    <div className="chat-head"><div><strong>Ask the tutor</strong><small>Ask about a part to bring it into focus.</small></div><button className="tutor-close" aria-label="Close tutor" onClick={hideTutor}><Icon name="sidebar" size={20}/></button>{user?<div className="chat-switcher"><select aria-label="Chats for this board" value={chatId||''} onChange={e=>e.target.value?openChat(e.target.value):newChat()}><option value="">New chat</option>{chats.map(c=><option key={c.id} value={c.id}>{c.title}</option>)}</select></div>:null}</div>
     <div className="chat-thread" ref={threadRef} aria-live="polite">
      {!thread.length&&<div className="chat-empty"><p>Ask about the part, wiring, or code. Use the on-screen controls to explore.</p>{suggestions.map(s=><button key={s} onClick={()=>!asking&&chatSend(s)}>{s}</button>)}</div>}
      {thread.map((m,i)=><div key={i} className={`chat-msg ${m.role}`}><small>{m.role==='user'?'You':m.engine==='ai'?'AI tutor · source-linked':m.engine==='command'?'Desk':m.notice||'Lesson guide'}</small><p>{m.text}</p>{m.sources?.filter(id=>sources[id]).map(id=><a key={id} href={sources[id].url} target="_blank" rel="noreferrer">{sources[id].title}<>{" "}<Icon name="diagonal" size={16}/></></a>)}</div>)}

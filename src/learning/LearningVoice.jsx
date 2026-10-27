@@ -6,11 +6,11 @@ import Icon from '../components/Icon.jsx';
 const messages={mint_failed:'Voice could not start. Try again shortly.',microphone_denied:'Allow microphone access to enable spoken replies.',at_capacity:'Voice is busy. Try again shortly.',connect_failed:'Voice could not connect. You can still type or dictate.',call_rejected:'Voice could not connect. Try enabling spoken replies again.',autoplay_blocked:'Your browser blocked audio. Enable spoken replies again.'};
 // One voice control lives in the chat. Wispr owns dictation; Bolna owns all audio.
 // Bolna only reads tutor replies; Wispr remains the dictation input.
-export default forwardRef(function LearningVoice({context,configured,onActiveChange,inputId},ref){
+export default forwardRef(function LearningVoice({context,configured,onActiveChange,onEnabledChange,inputId},ref){
  const [mode,setMode]=useState('off'),[state,setState]=useState('idle'),[consentOpen,setConsentOpen]=useState(false),[language,setLanguage]=useState('en'),[error,setError]=useState('');
  const modeRef=useRef('off'),callRef=useRef(null),epoch=useRef(0),limit=useRef(null),silence=useRef(null),mounted=useRef(true),latest=useRef({});
  latest.current={context,onActiveChange};
- const changeMode=next=>{modeRef.current=next;if(mounted.current)setMode(next);};
+ const changeMode=next=>{modeRef.current=next;if(mounted.current){setMode(next);onEnabledChange?.(next!=='off');}};
  const teardown=async()=>{
   epoch.current++;clearTimeout(limit.current);clearTimeout(silence.current);
   const call=callRef.current;callRef.current=null;

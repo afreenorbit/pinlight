@@ -1,0 +1,35 @@
+/* Concept map page */
+main:has(.concepts-page){background:var(--mint)}
+.concepts-page{padding-block:clamp(40px,6vw,80px) 120px;display:grid;gap:36px;color:var(--ink);font-family:'Bricolage Grotesque',sans-serif}
+.concepts-heading{display:grid;gap:14px;justify-items:start;max-width:760px}
+.concepts-heading h1{font-family:'Bowlby One',sans-serif;font-weight:400;font-size:clamp(32px,5vw,56px);line-height:1.05;text-shadow:3px 3px 0 var(--butter)}
+.concepts-heading p{font-size:17px;font-weight:600;line-height:1.5;opacity:.85}
+.concepts-note{font-weight:600;background:var(--butter);border-radius:12px;padding:6px 12px}
+.cm-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;font-weight:700}
+.cm-legend span{display:inline-flex;align-items:center;gap:6px}
+.cm-legend i{width:13px;height:13px;border-radius:50%;border:1.5px solid var(--ink)}
+.concepts-layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,1fr);gap:28px;align-items:start}
+.concept-map{background:var(--cream);border:3px solid var(--ink);border-radius:26px;box-shadow:6px 6px 0 var(--ink);padding:clamp(18px,3vw,30px);display:grid;gap:22px}
+.cm-track{display:grid;gap:10px}
+.cm-track h3{font-family:'Bowlby One',sans-serif;font-weight:400;font-size:17px;margin:0}
+.cm-track ol{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:26px;row-gap:12px}
+.cm-track li{position:relative}
+.cm-track li+li:before{content:'';position:absolute;left:-23px;top:50%;width:18px;border-top:3px solid var(--ink)}
+.cm-track li+li:after{content:'';position:absolute;left:-9px;top:calc(50% - 4.5px);border:5px solid transparent;border-left-color:var(--ink)}
+.cm-node{display:inline-flex;align-items:center;gap:8px;border:2.5px solid var(--ink)!important;border-radius:16px;padding:10px 14px;font:800 14px 'Bricolage Grotesque',sans-serif;color:var(--ink);transition:transform .12s,box-shadow .12s}
+.cm-node.s-new{background:#fff}
+.cm-node.s-strong{background:#c8f7da}.cm-node.s-improving{background:#fff3b0}.cm-node.s-revise{background:#ffd3cc}
+.cm-node b{background:var(--ink);color:#fff27a;border-radius:999px;padding:1px 8px;font-size:11px}
+.cm-node:hover{transform:translateY(-2px)}
+.cm-node.is-selected{box-shadow:4px 4px 0 var(--ink);transform:translate(-2px,-2px);outline:3px solid #fff27a;outline-offset:2px}
+.cm-detail{position:sticky;top:110px;background:#fff;border:3px solid var(--ink);border-radius:26px;box-shadow:6px 6px 0 var(--ink);padding:clamp(18px,3vw,28px);display:grid;gap:12px}
+.cm-detail-head{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.cm-prompt{font-family:'Bowlby One',sans-serif;font-size:clamp(18px,2vw,22px);line-height:1.25;margin:0}
+.cm-before{font-size:13px;font-weight:700;margin:0;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.cm-before button{border:1.5px solid var(--ink)!important;border-radius:999px;background:var(--cream);padding:3px 10px;font-weight:700;font-size:12px}
+.cm-detail h4{font-size:14px;font-weight:800;margin:4px 0 0}
+.cm-detail ul{margin:0;padding-left:20px;display:grid;gap:6px;font-size:15px;font-weight:500;line-height:1.4}
+.cm-detail details summary{font-weight:800;cursor:pointer}
+.cm-detail details p{font-size:14px;line-height:1.55;margin-top:6px}
+.cm-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+@media (max-width:900px){.concepts-layout{grid-template-columns:minmax(0,1fr)}.cm-detail{position:static}}
