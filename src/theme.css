@@ -212,3 +212,4 @@ main:has(.settings-page){background:var(--mint)}
   .tutor-rail:hover{transform:translate(-1px,-1px);box-shadow:6px 6px 0 var(--ink);background:var(--butter)}
 }
 @media (min-width:851px) and (max-width:1100px){.studio:not(.has-tutor) .studio-grid{grid-template-columns:0 minmax(0,1fr)!important}}
+.site-footer>a.footer-github{margin-left:0}

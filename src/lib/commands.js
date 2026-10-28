@@ -4,13 +4,14 @@ import { hideParams } from './url-state.js';
 import { botById, bots } from '../../shared/arena/bots.js';
 import { findConcept } from '../../shared/arena/progress.js';
 
+export const REPO_URL = 'https://github.com/afreenorbit/pinlight';
 export const go = path => { history.pushState(null, '', hideParams(path, { fresh: true })); dispatchEvent(new PopStateEvent('popstate')); scrollTo(0, 0); };
 export const openPanel = (open, data, then) => dispatchEvent(new CustomEvent('pinlight:ui', { detail: { open, data, then } }));
 export const sendToPanel = action => dispatchEvent(new CustomEvent('pinlight:panel', { detail: { action } }));
 export const sendToPage = (action, data) => dispatchEvent(new CustomEvent('pinlight:command', { detail: { action, ...data } }));
 
 export const commandHelp = [
-  { group: 'Get around', items: [['open arena', 'The voice battle'], ['new build', 'Start a fresh build review'], ['open learn', 'The 3D learning desk'], ['concept map', 'All 16 concepts and how they connect'], ['my desk', 'Your saved work'], ['account', 'Your profile'], ['go back', 'The previous page'], ['go home', 'The overview']] },
+  { group: 'Get around', items: [['open arena', 'The voice battle'], ['new build', 'Start a fresh build review'], ['open learn', 'The 3D learning desk'], ['concept map', 'All 16 concepts and how they connect'], ['my desk', 'Your saved work'], ['github', 'The source code, in a new tab'], ['account', 'Your profile'], ['go back', 'The previous page'], ['go home', 'The overview']] },
   { group: 'Battle', items: [['battle Volt', 'Solo against a bot (Volt, Ohm, Fuse or Spark)'], ['challenge a friend', 'Create a duo room'], ['rematch', 'Play the same opponent again']] },
   { group: 'Practise', items: [['skill check', 'A personalised test from your past games'], ['practise my weakest topic', 'Your lowest-scoring concept'], ['practise PWM', 'Any topic: I²C, pull-ups, servos, flyback diodes…'], ['practise this build', 'On Build review: the concepts your build needs'], ['next', 'Move on after feedback'], ['try again', 'Retry the same concept'], ['that’s my answer', 'Submit while answering']] },
   { group: 'Stats and sharing', items: [['profile stats', 'Your stats card'], ['download arena stats', 'Save your stats card as an image'], ['share', 'Share the open card'], ['download', 'Save the open card'], ['close', 'Close the open panel']] },
@@ -45,6 +46,7 @@ export function parseCommand(text) {
   if (has(said, '(open |go to )?(the )?learn(ing desk)?', 'workbench')) return { kind: 'go', path: '/learn' };
   if (has(said, '(open |go to )?(my )?desk', 'saved work')) return { kind: 'go', path: '/desk' };
   if (has(said, 'account', 'profile', 'my profile')) return { kind: 'go', path: '/signin' };
+  if (has(said, 'git ?hub( code| repo| repository| link| page)?', '(open |show )?(the )?(source code|source|repo|repository)')) return { kind: 'external', url: REPO_URL };
   if (has(said, 'settings')) return { kind: 'go', path: '/settings' };
   if (has(said, 'go back', 'back', 'previous page')) return { kind: 'back' };
   if (has(said, 'go home', 'home', 'overview')) return { kind: 'go', path: '/' };

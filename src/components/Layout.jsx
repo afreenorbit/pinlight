@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth.jsx';
 import { accountsEnabled } from '../lib/supabase.js';
 import Blob from '../arena/Blob.jsx';
 import CommandBar from './CommandBar.jsx';
+import { REPO_URL } from '../lib/commands.js';
 import GlobalPanels from './GlobalPanels.jsx';
 
 const headerAvatar = () => { try { return JSON.parse(localStorage.getItem('pinlight-arena-profile'))?.avatar || 'mint'; } catch { return 'mint'; } };
@@ -45,6 +46,6 @@ export default function Layout({ route, children }) {
     <CommandBar route={route} />
     <main id="main-content">{children}</main>
     <GlobalPanels />
-    <footer className="site-footer"><Brand /><span>Find the spark. Follow your curiosity.</span><a href="/settings">Learning settings <Icon name="settings" size={15} /></a><small>© {new Date().getFullYear()} Pinlight</small></footer>
+    <footer className="site-footer"><Brand /><span>Find the spark. Follow your curiosity.</span><a href="/settings">Learning settings <Icon name="settings" size={15} /></a><a className="footer-github" href={REPO_URL} target="_blank" rel="noopener noreferrer"><Icon name="github" size={15} /> GitHub</a><small>© {new Date().getFullYear()} Pinlight</small></footer>
   </div>;
 }

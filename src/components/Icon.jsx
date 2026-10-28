@@ -31,7 +31,8 @@ import ZoomIn from '@hugeicons/core-free-icons/ZoomInAreaIcon';
 import ZoomOut from '@hugeicons/core-free-icons/ZoomOutAreaIcon';
 import Download from '@hugeicons/core-free-icons/Download04Icon';
 import SidebarLeft from '@hugeicons/core-free-icons/SidebarLeftIcon';
-const icons={sidebar:SidebarLeft,rotate:Rotate,camera:Camera,chip:Chip,sensor:Target,rover:Robot,zoomIn:ZoomIn,zoomOut:ZoomOut,download:Download,arrow:ArrowRight,left:ArrowLeft,diagonal:ArrowUpRight,down:ArrowDown,file:File,mic:Mic,check:Check,layers:Layers,target:Target,plus:Plus,settings:Settings,close:Close,play:Play,pause:Pause,code:Code,led:Bulb,button:Button,rgb:Colour,buzzer:Music,servo:Rotate,upload:Upload,search:Search};
+import Github from '@hugeicons/core-free-icons/Github01Icon';
+const icons={github:Github,sidebar:SidebarLeft,rotate:Rotate,camera:Camera,chip:Chip,sensor:Target,rover:Robot,zoomIn:ZoomIn,zoomOut:ZoomOut,download:Download,arrow:ArrowRight,left:ArrowLeft,diagonal:ArrowUpRight,down:ArrowDown,file:File,mic:Mic,check:Check,layers:Layers,target:Target,plus:Plus,settings:Settings,close:Close,play:Play,pause:Pause,code:Code,led:Bulb,button:Button,rgb:Colour,buzzer:Music,servo:Rotate,upload:Upload,search:Search};
 export default function Icon({name='arrow',size=20,className='',...props}){
  return <HugeiconsIcon icon={icons[name]||ArrowRight} size={size} color="currentColor" strokeWidth={1.6} aria-hidden="true" focusable="false" className={`ui-icon ${className}`.trim()} {...props}/>;
 }

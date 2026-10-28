@@ -25,3 +25,7 @@ test('unclear requests say so instead of guessing', () => {
   assert.equal(parseCommand('Practise cooking.').kind, 'unknown');
   assert.equal(parseCommand('The weather is nice.'), null);
 });
+
+test('“github” and “open the source code” open the repository', () => {
+  for (const said of ['GitHub.', 'github code', 'open the repo', 'show source code']) assert.deepEqual(parseCommand(said), { kind: 'external', url: 'https://github.com/afreenorbit/pinlight' });
+});

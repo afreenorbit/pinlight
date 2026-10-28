@@ -25,6 +25,7 @@ export default function CommandBar({ route }) {
     if (command.kind === 'panel-action') { sendToPanel(command.action); return; }
     if (command.kind === 'go') { go(command.path); setReply('On it.'); return; }
     if (command.kind === 'back') { history.back(); return; }
+    if (command.kind === 'external') { const tab = window.open(command.url, '_blank'); if (tab) tab.opener = null; setReply(tab ? 'Opened GitHub in a new tab.' : 'Your browser blocked the new tab. Use the GitHub link at the bottom of the page.'); return; }
     if (command.kind === 'page') {
       if (route !== command.page) { setReply(command.page === '/build' ? 'Open a build review first, then say that again.' : 'That works inside the Arena. Say “open arena”.'); return; }
       sendToPage(command.action); return;
