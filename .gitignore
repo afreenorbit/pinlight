@@ -30,3 +30,6 @@ chat.md
 /vendor/
 /public/models/
 /src/review/pdf.js
+
+# Demo video footage and edits (large local files)
+/video/

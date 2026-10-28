@@ -1,125 +1,314 @@
 # Pinlight
 
+**Understand it. Then build it. Then prove it, out loud.**
 
-**Understand the board. Follow the connection. See what changes.**
+Pinlight is a voice-first electronics workbench. It teaches boards and parts in 3D, reviews a hardware idea before you buy anything, turns that idea into a wired 3D assembly with a printable enclosure, and tests what you understood in a spoken battle graded by AI. Every screen works with **Wispr Flow** dictation and a voice command bar, so the whole app can be used without a keyboard.
 
-Pinlight turns electronics PDFs into source-linked learning journeys, alongside prepared Raspberry Pi 5 and Arduino Uno R3 lessons. It brings a selectable 3D board, guided circuit activities, reference code, a source-linked AI tutor and a consent-gated voice tutor into one workspace.
+**[Open Pinlight →](https://pinlight.afreenorbit.tech/)**
 
-[Explore Pinlight](https://pinlight.afreenorbit.tech/)
+![React 19](https://img.shields.io/badge/React-19-61DAFB) ![three.js](https://img.shields.io/badge/three.js-3D-black) ![manifold-3d](https://img.shields.io/badge/manifold--3d-WASM%20CSG-orange) ![Mastra](https://img.shields.io/badge/Mastra-agents-purple) ![Groq](https://img.shields.io/badge/Groq-gpt--oss-f55036) ![Zod](https://img.shields.io/badge/Zod-typed%20AI-3068b7) ![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20RLS-3ECF8E) ![Auth0](https://img.shields.io/badge/Auth0-sign--in-eb5424) ![Node 24](https://img.shields.io/badge/Node-24-339933) ![Tests](https://img.shields.io/badge/tests-108%20passing-brightgreen) ![Wispr Flow](https://img.shields.io/badge/Wispr%20Flow-voice%20first-111)
 
-![Pinlight learning desk with tutor chat, an interactive board and a guided trail](docs/blog/s2-trail-focus.png)
+![Learning desk: ask the tutor and the 3D board flies to the part](docs/images/learn-tutor-focus.jpg)
 
-## Why it matters
+---
 
-A beginner's first circuit can mean switching between a datasheet, a pinout, wiring instructions and a code example. Pinlight keeps those pieces together: select a part, inspect its pins, follow a connection and ask why it works. The goal is to make starting electronics more approachable and let learners spend their effort understanding the circuit.
+## Contents
+- [The problem](#the-problem)
+- [Not a prompt wrapper](#not-a-prompt-wrapper)
+- [1. Learn](#1-learn--a-3d-learning-desk)
+- [2. Build Review](#2-build-review--check-an-idea-before-you-buy-parts)
+- [3. Your build in 3D + enclosure](#3-your-build-in-3d-with-an-enclosure-you-can-print)
+- [4. Arena](#4-arena--explain-it-out-loud)
+- [5. Personalised](#5-personalised)
+- [6. Voice everywhere](#6-voice-everywhere)
+- [Architecture](#architecture)
+- [Open source we build on](#open-source-we-build-on)
+- [Run locally](#run-locally)
+- [Testing](#testing)
+- [Honest limits](#honest-limits)
 
-Today, the catalogue includes **2 boards, 5 experiment types per board and 20 guided experiment steps per board**. The Pi has 18 selectable board stops and a 40-position pin inspector that distinguishes physical pin numbers from BCM GPIO numbers. These are coverage counts; learning gains and time savings have not yet been measured.
+---
 
-## What you can do
+## The problem
 
-- Explore the board in 3D, select parts and follow explanations linked to reference sources.
-- Try **Blink an LED**, **Read a button press**, **Set the RGB balance**, **Tune a piezo tone** and **Position a servo**. Change controls and inspect the matching Python or Arduino reference code.
-- Ask the tutor about the current lesson. Mastra orchestrates `gpt-oss-120b` through Groq; the server validates returned source IDs and component targets. A labelled curated guide is available when live AI is unavailable.
-- Talk it through out loud in English or Hindi. The voice tutor is consent-gated, capped at three minutes, and shares the chat command handler: it can move the scene, navigate lessons and run the teaching previews.
-- Upload an electronics PDF to create a persistent processing job, extract device specifications with source citations, explore approximate 3D components, review pins and dimensions, try ideal voltage-divider or capacitor-charge experiments, and search for related manufacturer references through SerpApi.
-- Sign in with Auth0 to save documents, chats, journeys and progress in My desk. Owner-scoped row-level security and private storage keep each account's files separate. Guests can explore; cloud saving needs an account.
+Beginners ask an AI chatbot for a parts list and get a confident answer they can't check. Is the driver right for those motors? Does the 5 V sensor need level shifting before it touches a Raspberry Pi pin? What happens if you skip a part? At the shop, someone asks why you need it and you have no answer. Datasheets, pinouts, wiring guides and code all live in different places, and nothing checks whether you actually understood any of it.
 
-![LED behaviour preview with reference code](docs/blog/s5-led-running-code.png)
+Pinlight closes that loop:
 
-## How it works
+```
+ learn the part  →  review the idea  →  see it assembled  →  explain it back
+   (3D desk)       (agents + rules)     (3D + enclosure)     (voice Arena)
+        ↑                                                         │
+        └──────────── weak topics become personalised practice ───┘
+```
 
-Pinlight is split into a browser desk, a Node API and a small set of provider integrations:
+## Not a prompt wrapper
 
-- **Browser desk:** React 19 and Vite, with Three.js for the original board illustrations. The desk owns the 3D scene, guided steps, code preview and chat.
-- **API:** Node 24 on Render. It verifies Auth0 tokens, assembles server-owned lesson snapshots, runs the Mastra tutor, validates answers, processes PDFs, proxies SerpApi and mints Bolna voice sessions.
-- **Typed tutor:** Mastra orchestrates `openai/gpt-oss-120b` through Groq. The server sends a bounded lesson snapshot and a strict output schema, then checks every returned evidence ID and component target before the answer reaches the scene. The browser cannot inject its own prompt text.
-- **Speech:** one Speak control in chat. Wispr inserts dictated text, and Bolna reads the chat response using ElevenLabs English or Sarvam Hindi. Stop dictation switches to continuous Bolna listening with Deepgram transcription. An authenticated OpenAI-compatible bridge sends each transcript to the same desk handler as typed chat; commands update the scene, questions use the existing Mastra/Groq tutor, and the actual result returns to Bolna for speech. Continuous sessions are capped at three minutes.
-- **ElevenLabs access:** Bolna is the orchestrator, not a model owner. Its preferred-model bundle includes ElevenLabs `eleven_turbo_v2_5`, so Pinlight uses Bolna's provider integration and does not need a direct `ELEVENLABS_API_KEY` for the standard Angelica voice. A cloned or custom voice would require connecting your own ElevenLabs account in Bolna.
-- **Data:** Supabase provides Postgres, row-level security and private document storage. Auth0 provides hosted sign-in and audience-bound API tokens. Local development uses SQLite for documents and processing jobs.
-- **Documents:** PDF.js extracts text with coordinates, Tesseract.js handles image-only pages, and Docling is an optional local table-layout worker. Zod and source checks remove unsupported references, numbers and pin labels.
-- **Hosting:** Vercel serves the frontend, Render runs the API, Groq serves the open-weight tutor and a `.tech` domain fronts the live app.
+The language models are one component among many. Everything a model returns is **parsed, validated, repaired and rendered by deterministic code** that would still run if the model were swapped out:
 
-Open weights leave room to change inference providers, while the open agent framework makes the typed tutor workflow inspectable and adaptable. Current AI inference is hosted and requires internet access. Provider credentials stay on the server.
+| Layer | What the code does, without an LLM | Where |
+|---|---|---|
+| **Typed AI boundary** | Every agent output is parsed with Zod. Unknown part IDs, pins, evidence IDs and scene targets are dropped before they reach the UI. Free-form strings are normalised to known enums. | `server/review/*`, `server/arena/coach.js` |
+| **Electrical rules** | Flags LEDs without series resistors, motors driven straight from GPIO, 5 V echo lines into 3.3 V pins, ultrasonic echoes needing a divider, missing grounds and pins the board doesn't have. Each wire gets a *checked* or *warning* status with a reason. | `shared/review/scene.js` |
+| **Scene repair** | Rovers get exactly two TT drive motors on separate driver channels (OUT1/2 and OUT3/4), loose wheels are folded into the motors, implausible sizes fall back to real dimensions, the camera gets a ribbon to CAM/DISP, and wire IDs are renumbered to stay unique. | `normalizeScene`, `normalizeDrive` |
+| **Form inference** | Regex and part analysis decide rover, arm, handheld, desk or box from the idea text, even if the model says otherwise. | `shared/review/assembly.js` |
+| **Layout engine** | Per-form placement, decks, standoffs, links and mount rules (front, top, joint, hidden), with overlap-free packing and wires routed between named pin anchors. | `assemble`, `layoutScene` |
+| **Solid geometry** | Enclosures are real CSG solids built in WebAssembly (manifold-3d), with openings cut where sensors, cameras and ports face outward, a lid lip, and binary STL and OpenSCAD exporters. | `shared/review/enclosure.js` |
+| **Grading** | Arena answers are scored against fixed key points with keyword rules and a points formula. The model's per-point grade is schema-checked, with a keyword fallback when the model is unavailable. | `shared/arena/grading.js` |
+| **Real time** | An in-memory room state machine (lobby → countdown → rounds → grading → finished), with SSE fan-out, heartbeats and client watchdogs. | `server/arena/rooms.js` |
+| **Voice grammar** | A rule-based command parser that ignores dictation punctuation ("Help.") and filler, and detects "that's my answer" at the end of a dictation. | `src/lib/commands.js` |
 
-**Current limits:** generated geometry remains approximate. Source checks reduce unsupported claims but do not independently verify every extracted relationship. Uploaded devices do not automatically become electrically accurate simulations. The new experiments solve ideal teaching circuits with explicit example values. Browser clients cannot supply their own prompt or override the lesson evidence set. Voice command delivery requires the desk tab to remain open and connected; reliability has not been measured across devices. Voice sessions use account credits and may be stored by the voice service.
+**108 automated tests** cover these rules, the layout engine, enclosure generation, grading, the room engine, progress stats and the command parser.
 
-## Challenge integrations
+---
 
-- **Render:** runs the Node API, including the Mastra tutor, Auth0 verification, PDF processing, SerpApi proxy and Bolna session minting.
-- **Mastra:** orchestrates the open-weight `gpt-oss-120b` typed tutor with a server-owned snapshot and strict evidence validation.
-- **Auth0:** provides hosted sign-in and audience-bound API tokens; Supabase row-level security scopes saved items, chats and PDFs to the verified owner.
-- **SerpApi:** supplies manufacturer reference links for an explicitly submitted part name. Results are cached, deduplicated and rate-limited.
-- **ElevenLabs via Bolna:** provides English voice synthesis (`eleven_turbo_v2_5`, voice Angelica) for the consented voice tutor. Hindi uses Sarvam `bulbul:v3` (voice Suhani). The app does not hold a direct ElevenLabs key for the standard voice.
-- **`.tech`:** the live app runs at [pinlight.afreenorbit.tech](https://pinlight.afreenorbit.tech), with its API at `api.afreenorbit.tech`.
+## 1. Learn: a 3D learning desk
 
-See [the PDF pipeline](docs/pdf-pipeline.md) for processing, provider configuration, cloud storage, validation and deployment boundaries. See [Auth0 setup](docs/auth0-setup.md) for provider-side sign-in and Supabase ownership configuration.
+| | |
+|---|---|
+| ![Tutor focus](docs/images/learn-tutor-focus.jpg) | ![RGB activity](docs/images/learn-rgb.jpg) |
+| *Ask "where is the fan connector?" and the camera flies to it* | *Guided activity: mix the RGB LED, with the code alongside* |
+
+- **Raspberry Pi 5 and Arduino Uno R3** as selectable procedural 3D boards. The Pi has 18 board stops and a **40-pin inspector** that separates physical pin numbers from BCM GPIO numbers.
+- **Guided activities** with live controls and matching Python (gpiozero) or Arduino code: *Blink an LED*, *Read a button*, *Set the RGB balance*, *Tune a piezo*, *Position a servo*, plus **Camera lab** and **Rover lab**. Each has a Copy and a Download button.
+- **Ten chips and sensors** (TMP36, BMP280, SHT31, MPU-6050, HC-SR04, VL53L0X, NE555, LM358, 74HC595, MCP3008), each with a 3D body and four learning steps. They also have **20 board activities** that rebuild cables against named header pins, adding ADCs, level shifters and protection parts where the real circuit needs them.
+
+![Chips and sensors: MCP3008 activity wired to an Arduino](docs/images/chips-activity.jpg)
+
+- **A source-grounded tutor.** Mastra orchestrates `gpt-oss-120b` on Groq. The server sends a bounded lesson snapshot and a strict output schema, then checks every returned evidence ID and component target before the scene moves. The browser can't inject its own prompt, and a curated guide is used when live AI is down.
+- **PDF journeys.** Upload a datasheet and the pipeline builds a lesson from it:
+  - **PDF.js** extracts text with coordinates;
+  - **Tesseract.js** reads scanned pages;
+  - **Docling** (optional) handles table layout;
+  - citations and unsupported numbers are checked before anything is shown.
+
+## 2. Build Review: check an idea before you buy parts
+
+![Speak your idea, your parts and what the AI suggested](docs/images/build-idea.jpg)
+
+Speak your idea, the parts you already own and what another AI suggested. A multi-step pipeline **streams its progress over SSE**, and the button shows each step as it runs:
+
+1. **Normalise the input** against a parts catalogue, working out which parts you own and which are missing (`shared/review/ownership.js`, `catalog.js`).
+2. **Plan** with `gpt-oss-120b` and **review** with `gpt-oss-20b` as Mastra agents with tools, retrieving source evidence along the way.
+3. **Five-branch possibility graph:** *you have these*, *you don't have these yet*, *if you add them*, *if you don't* and *alternatives you could use*, each tied to this specific idea.
+4. **Requirements and checks**, plus a one-click **"Practise the concepts this build needs"**, which sends you into an Arena round built from the build's concepts.
+
+| | |
+|---|---|
+| ![Possibility graph](docs/images/build-graph.jpg) | ![Graph branches](docs/images/build-graph-branches.jpg) |
+| *The idea at the root, with five branches* | *Each branch explains consequences, not just parts* |
+
+## 3. Your build in 3D, with an enclosure you can print
+
+A **scene agent** turns the reviewed build into parts, sizes, pins and connections. Then deterministic code takes over.
+
+| | |
+|---|---|
+| ![3D build](docs/images/build-3d.jpg) | ![Wiring list](docs/images/build-wiring.jpg) |
+| *Workbench view: every part and wire, colour-coded by power, ground and signal* | *Every connection checked against the wiring rules* |
+
+- **Form inference.** "A rover that follows a face" becomes a rover with a chassis, two TT motors and a caster, even if the model said "box".
+- **Assembly engine.** Per-form placement with decks, standoffs, links and mount rules. Facing parts are never hidden, and arm servos become joints.
+- **Procedural 3D parts** (`src/review/parts3d.js`). Boards, drivers, motors, wheels, ultrasonic sensors, cameras, servos, batteries and breadboards are all drawn in code with **three.js**, with no third-party model files. The boards are the same models the Learn desk uses (1 unit = 10 mm).
+- **Three views:**
+  - a workbench with every wire;
+  - the inside of the assembly;
+  - the **finished product**, with colour swatches.
+
+  Each view uses OrbitControls, with click-to-zoom so the page still scrolls normally.
+
+| | |
+|---|---|
+| ![Enclosure](docs/images/build-enclosure.jpg) | ![Finished product](docs/images/build-product.jpg) |
+| *A project-specific enclosure with openings where parts face out* | *A preview of the finished product in your colour* |
+
+- **Project-specific enclosure:**
+  - a cover or box with a lid lip, sized around the assembly's bounds;
+  - openings cut where cameras, ultrasonic sensors and ports face outward;
+  - built as **CSG in manifold-3d (WebAssembly)**;
+  - downloadable as **binary STL** for slicers and as **OpenSCAD** source for editing.
+- **Board-only cases** for the Pi 5 and Uno are generated from the official mechanical drawings, with mounting holes and port cut-outs.
+
+## 4. Arena: explain it out loud
+
+| | |
+|---|---|
+| ![Pick a bot](docs/images/arena-bots.jpg) | ![Battle](docs/images/arena-battle.jpg) |
+| *Solo against four personality bots, or live with a friend* | *60 seconds: speak, then say "that's my answer"* |
+
+- **16 concepts across 4 tracks**, from Ohm's law to H-bridges. Each has fixed key points (with keyword sets), a reference answer, and strong, partial and weak bot answers.
+- **Bots with personalities** (Volt, Ohm, Fuse, Spark). Each has its own accuracy odds and pacing: `planBotTurn` picks a delay and an answer variant, so the bots answer live while you speak.
+- **Duo rooms** with a 5-character invite code. Scores update live over **server-sent events**: a `ping` heartbeat every 20 s, and a client watchdog that reconnects after 45 s of silence. Seat tokens never leave the server.
+- **Four 60-second rounds.** Answers are submitted by voice: a regex detects *"submit"*, *"that's my answer"* or *"final answer"* at the end of the dictation and sends the answer. An empty dictation counts as a blank answer.
+- **Scoring:** `points = accuracy × 10 + round(clarity × 4 × min(1, accuracy / 5)) + speed`. Clarity only counts when you're also accurate, so confident nonsense doesn't score.
+- **AI grading and coach's verdict.** A Mastra grader returns structured per-point scores (Zod-validated), and the coach writes a verdict with the points you missed and the model answer.
+
+![Coach's verdict](docs/images/arena-verdict.jpg)
+
+## 5. Personalised
+
+| | |
+|---|---|
+| ![Profile stats](docs/images/profile-stats.jpg) | ![Stats card](docs/images/stats-card.jpg) |
+| *Strengths, weaknesses and key points you keep missing* | *A shareable stats card, inspired by Wispr Flow's usage card* |
+
+- Every match is saved to your account (`arena_matches`, with row-level security). It tracks battles, wins, day streak, average and **mastery per topic**.
+- **Personalised skill check** and **practice** go straight to your weakest topics (`planSkillCheck`, `weakestTopic`). The **concept map** colours the 16 ideas by how well you explain them, following the prerequisite tracks.
+- **Share or download** stats and result cards, rendered to images in the browser.
+- **My desk** keeps saved build reviews, learning items and chats. Guests can try everything; data is saved only when signed in.
+
+![Share your result](docs/images/share-result.jpg)
+
+## 6. Voice everywhere
+- **Wispr Flow** dictation goes into normal inputs. Auto-send fires when dictation finishes, so you never press Enter.
+- **Voice command bar** under the account button. Say *"help"*, *"open arena"*, *"new build"*, *"concept map"*, *"share stats"*, *"start a battle"* or *"practise this"*. A rule-based parser strips dictation punctuation (keeping decimal points) and maps phrases to actions.
+- **Desk commands:** *"next sensor"*, *"try activity with Arduino"*, *"set temperature to twenty-five"*, *"show connections"* and *"zoom in and show code"*. They're bounded and validated; anything else goes to the tutor.
+- **Optional spoken replies** through Bolna: ElevenLabs English, Sarvam Hindi and Deepgram transcription for continuous listening. Sessions are consent-gated, and the voice bridge uses expiring capabilities.
+
+---
+
+## Architecture
+
+```
+┌──────────────────────── Browser · React 19 + Vite (Vercel) ────────────────────────┐
+│ three.js scenes ─ learning desk · workbench · assembly · finished product           │
+│ manifold-3d WASM ─ enclosure CSG → binary STL / OpenSCAD                            │
+│ command parser · Wispr-aware inputs · SSE room client + watchdog · url-state         │
+│ Auth0 SPA (refresh tokens) ──► audience-bound access token                          │
+└───────────────────────────────────────┬────────────────────────────────────────────┘
+                                        │ HTTPS · JSON · SSE
+┌───────────────────────────── Node 24 API (Render) ─────────────────────────────────┐
+│ zod-validated routes · per-IP rate limits · allow-listed origins · jose JWT verify │
+│ Mastra agents on Groq                                                              │
+│   tutor · planner (gpt-oss-120b) · reviewer (gpt-oss-20b) · scene agent · grader    │
+│   └─ strict schemas · evidence checks · rate-limit-aware retry                     │
+│ deterministic engines ─ wiring rules · form inference · assembly · grading         │
+│ Arena rooms ─ in-memory state machine · SSE fan-out · 20 s heartbeats              │
+│ PDF pipeline ─ PDF.js · Tesseract.js · Docling (optional)                          │
+│ Bolna voice bridge ─ expiring capabilities                                         │
+└───────────────────────────────────────┬────────────────────────────────────────────┘
+                                        │ pg / supabase-js (service key, server only)
+┌──────────────── Supabase Postgres · row-level security on owner_key ───────────────┐
+│ build_records · arena_matches · learning items · chats · private document storage   │
+└────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Engineering details
+- **Lenient in, strict out.** The scene schema accepts any string for shape, mount, role or kind, then normalises to known enums. A creative model output can't crash the renderer, and an unknown shape still renders as a sensible generic part.
+- **Rate-limit resilience.** On Groq's free tier (about 8k tokens per minute), the scene agent reads the provider's suggested retry delay, waits up to 25 s and retries once. An in-flight map allows only one scene request per review, which also absorbs React StrictMode double mounts.
+- **Geometry that agrees.** All shared code works in millimetres (1 three.js unit = 10 mm), so the 3D view, the assembly bounds and the exported STL describe the same object. Framing uses part bounds only, not the floor grid. Meshes use non-indexed geometry for clean flat shading.
+- **Security:**
+  - provider keys live only on the server;
+  - owner keys come only from verified Auth0 tokens, and every query is scoped by owner, with RLS as a second wall;
+  - room views omit seat tokens and owners;
+  - record IDs, chat IDs and room codes are kept out of the address bar (`src/lib/url-state.js`, session-scoped);
+  - 500 errors return generic messages.
+- **Data model.** Migrations `0001` to `0005` cover desk items, learning artifacts, Auth0 ownership (`current_owner_key()`), build records and Arena progress, all with RLS policies.
+
+---
+
+## Open source we build on
+
+![three.js](https://img.shields.io/badge/three.js-MIT-black) ![manifold-3d](https://img.shields.io/badge/manifold--3d-Apache--2.0-orange) ![React](https://img.shields.io/badge/React-MIT-61DAFB) ![Vite](https://img.shields.io/badge/Vite-MIT-646CFF) ![Mastra](https://img.shields.io/badge/Mastra-Apache--2.0-purple) ![Zod](https://img.shields.io/badge/Zod-MIT-3068b7) ![PDF.js](https://img.shields.io/badge/PDF.js-Apache--2.0-red) ![Tesseract.js](https://img.shields.io/badge/Tesseract.js-Apache--2.0-blue) ![KaTeX](https://img.shields.io/badge/KaTeX-MIT-green) ![pdf-lib](https://img.shields.io/badge/pdf--lib-MIT-lightgrey) ![Supabase JS](https://img.shields.io/badge/supabase--js-MIT-3ECF8E) ![pg](https://img.shields.io/badge/node--postgres-MIT-336791) ![jose](https://img.shields.io/badge/jose-MIT-yellow) ![Hugeicons](https://img.shields.io/badge/Hugeicons-MIT-ff69b4)
+
+| Project | What it does in Pinlight |
+|---|---|
+| **three.js** | Every 3D view: the learning desk, workbench, assembly, enclosure and finished product |
+| **manifold-3d** | WebAssembly CSG engine that builds watertight enclosure solids in the browser |
+| **React · Vite** | Interface and build |
+| **Mastra** | Agent framework for the tutor, planner, reviewer, scene agent, grader and coach |
+| **Zod** | Typed boundary on every AI response and API route |
+| **PDF.js · pdf-lib · Tesseract.js · Docling** | Reading, rendering and OCR for datasheets |
+| **KaTeX** | Maths in questions |
+| **supabase-js · node-postgres** | Saved work and Arena progress |
+| **jose · Auth0 SPA SDK** | Token verification and sign-in |
+| **Hugeicons** | Icons |
+| **Bowlby One · Bricolage Grotesque · DM Sans · Manrope** | Fonts (SIL OFL) |
+
+**Reference data:**
+- the official **Raspberry Pi 5 mechanical drawing** and **Arduino Uno Rev3 documentation**, for board dimensions and mounting holes;
+- **EEE-Bench** (MIT), for practice questions.
+
+**Hosted services:** Groq (`gpt-oss` open-weight models), Supabase, Auth0, Bolna (ElevenLabs, Sarvam, Deepgram), SerpApi, Vercel and Render.
+
+Full licence details are in **[CREDITS.md](CREDITS.md)**. All 3D part models are drawn in Pinlight's own code; no third-party model files are shipped.
+
+---
 
 ## Run locally
 
-Requires **Node.js 24+**. On a fresh checkout, copy `.env.example` to `.env` and configure the integrations you need. Preserve an existing `.env`. Set `GROQ_API_KEY` for live AI answers. Device extraction additionally requires `DEVICE_EXTRACTION_PROVIDER=groq` and `GROQ_VISION_MODEL` (or a text extraction model); this sends PDF content to Groq. Leave the provider local to keep device extraction on your server. Without a tutor key, the learning desk can use its curated guide.
+Requires **Node.js 24+**. Copy `.env.example` to `.env` (keep an existing one) and set the integrations you need. `GROQ_API_KEY` enables the live AI; without it, the desk uses its curated guide and Arena grading falls back to keyword rules.
 
 ```sh
 npm install
-npm run dev:api
+npm run dev:api   # API on 127.0.0.1:4100
+npm run dev       # in a second terminal → http://localhost:5173
 ```
 
-In a second terminal:
+**Accounts and saving.** Set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_ACCOUNTS=on` and the Auth0 values. Then apply `supabase/migrations/`, or run:
 
 ```sh
-npm run dev
+npm run migrate:learning
+npm run migrate:review
+npm run migrate:arena
 ```
 
-Open [localhost:5173](http://localhost:5173/learn). The local API uses `127.0.0.1:4100`.
+These need a server-only `DATABASE_URL` (+ `DATABASE_SSL_CA`). To save build reviews and Arena progress, the API needs either `SUPABASE_URL` + `SUPABASE_SECRET_KEY`, or `DATABASE_URL`.
 
-Optional accounts and saved desks need `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_ACCOUNTS=on` and the Auth0 values in `.env.example`. Apply `supabase/migrations/0001_pinlight_desk.sql`, `0002_learning_artifacts.sql` and `0003_auth0_ownership.sql`, or run `npm run migrate:learning` with a server-only `DATABASE_URL`, `DATABASE_SSL_CA`, `VITE_SUPABASE_URL` (or `SUPABASE_URL`) and, when using Auth0, `AUTH0_DOMAIN`. The runner applies the ownership migration when the function is missing or Auth0 is configured, so native Supabase accounts also get `current_owner_key()`. Back up the entire `data/` directory to preserve local PDFs, jobs and generated journeys.
+**Optional voice replies.** Set `BOLNA_API_KEY` and run `npm run configure:learning-voice`.
 
-Optional voice tutor: set `BOLNA_API_KEY` and run `npm run configure:learning-voice`. The script creates or reuses the `Pinlight Raspberry Pi Tutor` agent and writes `BOLNA_LEARNING_AGENT_ID` to `.env`. The learning voice service reads `BOLNA_LEARNING_AGENT_ID`; if your `.env` only has the older `BOLNA_AGENT_ID`, add the new name. The standard English voice uses Bolna's preferred-model ElevenLabs integration, so no direct `ELEVENLABS_API_KEY` is required. Hindi uses Sarvam. For a custom or cloned voice, connect your own ElevenLabs account in Bolna and update the voice ID in the agent config.
-
-## Checks and technical notes
+## Testing
 
 ```sh
-npm test
-npm run build
+npm test        # 108 tests
+npm run build   # production frontend build
 ```
 
-`npm test` covers the server and lesson contracts; `npm run build` checks the frontend. The automated suite does not cover the browser voice session or hardware behaviour. Test the voice path manually with a consented session and a Bolna agent that has the standard ElevenLabs voice available. Optional provider checks, `npm run test:learning-live` and `npm run test:live`, require credentials and make real provider requests. `npm run test:live` sends a synthetic fixture to the configured device-extraction provider.
+| Suite | Covers |
+|---|---|
+| `scene.test.js` | Pin validation, camera ribbon, wiring warnings, layout without overlaps, rover repair |
+| `assembly.test.js` | Form inference, mounts and per-form placement |
+| `enclosure.test.js` | Enclosure plans, CSG solids, STL and OpenSCAD output |
+| `arena.test.js` | Room lifecycle, bots, scoring, spoken submit, duo and practice modes |
+| `progress.test.js` | Match records, mastery, stats, skill-check planning |
+| `commands.test.js` | Voice command parsing with dictation punctuation |
+| `build-review.test.js` | Review pipeline contracts and storage |
 
-Board names belong to their owners. Pinlight is not affiliated with Raspberry Pi Ltd or Arduino.
+Optional live checks (`npm run test:learning-live`, `npm run test:live`) need credentials and call real providers.
 
-### Unified speech rollout
+More detail: [Build Review notes](docs/build-review.md) · [PDF pipeline](docs/pdf-pipeline.md) · [Auth0 setup](docs/auth0-setup.md)
 
-Deploy the API and frontend, then run `npm run configure:learning-voice`. The script checks the live bridge, registers its authenticated custom model endpoint with Bolna, and updates only the dedicated learning agent. It preserves the archived Tracepoint agent. `BOLNA_BRIDGE_URL` can override the default public API endpoint; each provider turn authenticates with a private, expiring capability issued for that call. The model-list endpoint is public metadata; it does not expose a session or execute commands.
+## Future work
 
-Press **Speak** in chat and consent once. Dictate with Wispr or type; replies are read through a short, microphone-muted Bolna call. **Stop dictation** switches to a continuous microphone call; say **stop listening** to finish. Text dictation and continuous listening share the same chat, lesson navigation and scene commands. A playback call closes after detected speech ends, with a maximum duration as a backstop. These calls use Bolna credits; there is no browser speech-synthesis fallback.
+### Build Review → a real build
+- **Enclosures that fit like a product.** Add screw bosses that match each board's mounting holes, snap-fit lids, cable channels between decks, vents near motor drivers, and print-ready tolerances. Today the shell fits around the assembly's bounds; next it should be designed around each part.
+- **Edit the build by voice.** *"Make the case 10 mm taller"*, *"move the camera to the top"*, *"swap the L298N for a TB6612"*. The scene is already structured data, so these become bounded edits followed by a fresh wiring check and enclosure rebuild.
+- **Accurate part models.** Replace the procedural shapes with dimensioned models generated from licence-friendly sources such as the KiCad 3D libraries, so the enclosure openings line up with real connectors.
+- **From review to working firmware.** Generate starter code (gpiozero / Arduino) from the checked wiring list, so the pins in the code always match the pins in the 3D view.
+- **Simulate before you solder.** Export the circuit to a simulator such as Wokwi, run it, and feed the results back into the wiring checks.
+- **Bill of materials.** One click turns "you don't have these yet" into a costed shopping list with alternatives.
+- **Build journal.** Track a build from idea to finished product: photos, what changed, what broke, and what the review warned about.
 
-The bridge uses separate expiring capabilities for the browser and provider, deduplicates retried turns and waits for the desk's result before speaking. A disconnected tab returns a timeout message rather than a fabricated successful action. A live microphone check is still required after deployment.
+### Continuous voice
+- **Hands-free mode.** Keep listening after the first command, so you don't press a key for every sentence. Pause with *"stop listening"*, with a clear indicator and consent on every session.
+- **Spoken Arena.** The coach reads out its verdict, and the bots answer aloud in duo spectator mode.
+- **Talk back and forth with the tutor.** It speaks while the 3D board moves, and you can interrupt with *"wait, show me that pin again"*.
+- **More languages.** Hindi voice replies already run through Sarvam; extend them to the tutor, the Arena questions and the grading.
 
-## Camera and rover extension
+### Arena
+- **Rooms that survive restarts.** Move room state from memory to Redis or Postgres, so a redeploy or a free-tier sleep doesn't end a live match.
+- **Classroom mode.** A teacher opens a room for a whole class, picks the concepts, and sees which key points the class keeps missing.
+- **Adaptive difficulty and spaced repetition.** The next question depends on your mastery, and weak topics come back on a schedule instead of only when you ask for practice.
+- **More concepts.** Go beyond 16: sensors, communication protocols, power design, and questions generated from your own build (with fixed key points reviewed before they go live).
+- **Leagues and weekly challenges**, opt-in and shareable like the stats card.
 
-Camera lab and Rover lab are available for both Pi 5 and Uno R3. Detailed procedural 3D assemblies are illustrative, not manufacturer CAD. Camera lab offers sample-image controls, optional local-only computer webcam input, PNG capture and download, and Pi/Picamera2 or Uno/Arducam Mini OV2640 reference programs. Rover lab includes a two-wheel driving canvas, obstacle stopping, distance readouts, wheel controls and separate TB6612FNG/ultrasonic hardware examples. All original activities expose their code by default, with Copy and Download. Physical hardware has not been tested.
+### Learn
+- **More boards:** ESP32, Raspberry Pi Pico and micro:bit, with their own pin inspectors and activities.
+- **Identify a part from a photo.** Point the camera at a sensor or chip and the desk opens its lesson.
+- **Live hardware mode.** Connect a real Pi or Arduino (Web Serial) and show its pin states on the 3D board.
+- **Datasheet journeys with checks.** Turn any uploaded PDF into Arena questions about that part.
 
-The Uno camera activity requires a buffered Arducam Mini 2MP Plus, rather than a bare camera sensor. The Pi ultrasonic example requires appropriate echo level shifting. Reference links accompany each lesson.
-
-### Submission history
-
-Camera/rover work is an extension after the recorded demo and is not represented by the original submission video or screenshots. The last code commit before this extension was `2080e94`. For judging, use the submitted revision; changes committed after October 25, 2026 at 11:59 PM PDT are post-deadline additions, not part of the submitted build.
-
-## Chips, sensors and connection inspection
-
-The library has ten curated parts: TMP36, BMP280, SHT31, MPU-6050, HC-SR04-style ultrasonic module, VL53L0X, NE555, LM358, 74HC595 and MCP3008. Each has a selectable 3D body/interface, four learning steps, a source link and an interactive idealized reading. DIP chip pin numbers follow the specified top-view package; sensor breakout function pads remain illustrative because board variants differ. JavaScript examples demonstrate transfer relationships rather than claiming to be hardware drivers.
-
-Below each part's lesson, **Try an activity** offers Raspberry Pi 5 and Arduino Uno R3 variants (20 activities total). Change simulated inputs, inspect a live visual response and recent input history, select named connection rows, and copy/download a Python program or Arduino sketch with setup instructions. Activities cover thermometry, pressure, humidity, tilt, ultrasonic distance, optical proximity, timer frequency, amplifier gain, eight LEDs and potentiometer sampling. The Pi analogue activities include an MCP3008; Uno I²C examples include a bidirectional level shifter; Pi ultrasonic and NE555 inputs include the specified interface protection. These are ideal browser simulations with hardware reference programs, not live physical-board connections or bench-tested circuits.
-
-Selecting **Try activity** replaces the isolated part with its connected 3D host assembly. Switching host rebuilds the cables against named board-header and component terminals. Supporting ADCs, voltage-interface circuits, feedback/timing parts and LED loads are included as appropriate. Wires and components are selectable. The 3D layouts are illustrative assemblies, not manufacturer CAD or a substitute for a breadboard schematic.
-
-### Working with Wispr Flow
-
-Wispr Flow inserts a completed transcript into the chat; Pinlight interprets and executes it. Enable **Auto-send dictation**, focus the chat, and use Flow's configured shortcut. Flow's hands-free recording mode avoids holding a key, but the recording must finish before the desktop transcript arrives. Pinlight does not capture Wispr audio or control its desktop microphone. Short inserted commands such as “next” are accepted, and chat focus returns after a command.
-
-“Okay, move to the next sensor” browses the sensor library (TMP36 → BMP280 → SHT31 → MPU-6050, continuing through the sensors and wrapping). “Previous chip” browses only chips. “Next step” stays in the selected part's four-step lesson. Other examples: “Try activity with Arduino”, “Set temperature to twenty-five”, “Show connections”, “Show code”, “Zoom in”, and “Try activity, then zoom in and show code”. Commands are bounded and validated; unsupported requests go to the source-grounded tutor. This does not claim unrestricted natural-language automation.
-
-Wispr-only navigation works with voice replies disabled. Optional Bolna speech reads the response. The existing **Stop dictation** switch starts a separate continuous Bolna WebRTC session, which dispatches transcripts through the same command handler and stops on “stop listening”. It does not require Wispr. The in-app **Working with Wispr Flow** guide explains the distinction; **Use Wispr dictation** stops the Bolna session and returns focus to chat. Continuous Bolna sessions retain the three-minute limit.
-
-Project cables resolve named board anchors. The Pi camera ribbon reaches CAM/DISP 0 and routes around the Ethernet housing. Uno camera SPI/I²C leads and rover driver/sensor leads use named pins matching the reference programs. A selectable Pi echo level-shifter is included. UI selection supports pointer picking and a keyboard-accessible component menu. Physical correctness still requires the exact module documentation and hardware testing; this is not manufacturer CAD.
-
-PDF tools now live in a compact My Desk section. The camera monitor keeps capture and download feedback alongside its preview. The header/footer follow normal document flow, with the workbench stacking on narrower viewports.
+### Platform
+- **Installable PWA** that works on phones and tablets, with cached lessons that work offline.
+- **Accessibility pass:** full keyboard and screen-reader support for the 3D views, captions on spoken replies, and reduced-motion options.
+- **A paid hosting tier** to remove the cold starts of the Render free tier.
